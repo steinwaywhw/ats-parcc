@@ -1,4 +1,7 @@
 
+typedef 
+
+
 
 fun len (string): int
 fun head (string, int): string
