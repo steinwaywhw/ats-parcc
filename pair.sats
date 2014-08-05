@@ -1,3 +1,3 @@
 
 
-datatype pair (a:type, b:type) = Pair of (a, b)
+datatype pair (a:t@ype, b:t@ype) = Pair of (a, b)

@@ -1,55 +1,74 @@
-staload "./prelude.sats"
-staload "./parcc.sats"
-staload st = "./string.sats"
-staload sm = "./stream.sats"
-staload ut = "./unit.sats"
-staload pr = "./pair.sats"
+staload "parcc.sats"
+staload "pair.sats"
+staload "maybe.sats"
+staload "token.sats"
+staload sm = "stream.sats"
 
-assume parser (i, o) = i -<cloref1> result (i, o)
+staload _ = "stream.dats"
+staload _ = "location.dats"
+
+assume parser (i, o) = lazy ($sm.stream i) -<cloref1> result (i, o)
 
 
 //
 // pargen
 //
 implement succeed {i} {o} (ret) = 
-	lam (str) =<cloref1> Success (ret, str)
+	lam (input) =<cloref1> Success (ret, input)
 
-implement literal {i} (match) = 	
-	lam (str) =<cloref1> let 
-		val str = sdsnewlen (str, strlen str)
-		val match = sdsnewlen (match, strlen match)
-		val len = min (sdslen match, sdslen str)
-		val head = sdsnewlen (str, 0, len)
-		val tail = substr (str, len)
-	in 
-		if equal ($sm.head (sm), match) then
-			Success ($ut.Unit (), $sm.tail (sm))
-		else 
-			Failure (sm)
-	end
+
 
 //
 // parcom
 //
 implement alt {i} {o} (a, b) = 
-	lam (s) =<cloref1> 
-		let 
-			val r = apply (a, s)
-		in case+ r of 
-			| Success (_, _) => r
-			| Failure (_) => apply (b, s)
-		end
+	lam (input) =<cloref1> 
+		case+ apply (a, input) of 
+		| Success (ret, input) => Success (ret, input)
+		| Failure _ => apply (b, input)
+		
 
 implement seq {i} {o1,o2} (a, b) = 
 	bind (a, 
 		lam (x) =<cloref1> 
-			bind (b, lam (y) =<cloref1> succeed ($pr.Pair (x, y))))
+			bind (b, lam (y) =<cloref1> succeed (Pair (x, y))))
+
+implement sat {i} {o} (p, f) = 
+	lam (input) =<cloref1> 
+		case+ apply (p, input) of 
+		| Failure _ => Failure (input) 
+		| Success (ret, rest) =>
+			if f (ret)
+			then Success (ret, rest) 
+			else Failure (input)
+
+implement opt {i} {o} (p) =
+	lam (input) =<cloref1> 
+		case+ apply (p, input) of 
+		| Success (ret, rest) => Success (Just (ret), rest)
+		| Failure (input) => Success (Nothing (), input)
+
+implement rpt1 {i} {o} (p) = seq (p, p^+)
+implement rpt0 {i} {o} (p) = (p^+)^?
 
 implement apply {i} {o} (p, s) = p (s)
 
 implement bind {i} {o1,o2} (p, f) = 
+	lam (input) =<cloref1> 
+		case+ apply (p, input) of 
+			| Success (ret, input) => apply (f (ret), input)
+			| Failure (input) => Failure (input)
+
+
+implement lit_char (match) = 
 	lam (sm) =<cloref1> 
-		case+ apply (p, sm) of 
-			| Success (ret, sm) => apply (f (ret), sm)
-			| Failure (sm) => Failure (sm)
-		
+		case+ !sm of
+		| $sm.Nil () => Failure (sm)
+		| $sm.Cons (p, rest) => let
+			val Pair (c, loc) = p 
+		in 
+			if c = match
+			then Success (TChar (c, loc), rest)
+			else Failure ($delay ($sm.Cons (p, rest)))
+		end
+

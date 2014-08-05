@@ -1,5 +1,5 @@
 
 
 datatype maybe (a:t@ype) = 
-	| nothing of ()
-	| just of (a)
+	| Nothing of ()
+	| Just of (a)

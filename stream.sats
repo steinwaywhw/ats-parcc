@@ -1,27 +1,20 @@
+staload "maybe.sats"
 
-//
-// it is a string stream
-//
-abstype stream (a:type)
+datatype stream (a:t@ype) =
+	| Cons of (a, lazy (stream a))
+	| Nil of ()
 
-symintr head
-fun head_default {a:type} (stream (a)): a
-fun head_len     {a:type} (stream (a), int): stream (a) 
-overload head with head_default
-overload head with head_len 
+fun {a:t@ype} head (lazy (stream a)): maybe a
+fun {a:t@ype} take (lazy (stream a), int): lazy (stream a)
+fun {a:t@ype} tail (lazy (stream a)): lazy (stream a)
+fun {a:t@ype} drop (lazy (stream a), int): lazy (stream a)
+fun {a:t@ype} get (lazy (stream a), int): maybe a
 
-symintr tail
-fun tail_default {a:type} (stream (a)): stream (a)
-fun tail_len	 {a:type} (stream (a), int): stream (a)
-overload tail with tail_default
-overload tail with tail_len 
+fun {a,b:t@ype} {r:t@ype} zip (lazy (stream a), lazy (stream b), (a, b) -<cloref1> r): lazy (stream r)
+fun {a:t@ype} filter (lazy (stream a), a -<cloref1> bool): lazy (stream a)
+fun {a:t@ype} interleave (lazy (stream a), lazy (stream a)): lazy (stream a)
+fun {a:t@ype} merge (lazy (stream a), lazy (stream a), (a, a) -<cloref1> int): lazy (stream a)
+fun {a:t@ype} {b:t@ype} map (lazy (stream a), a -<cloref1> b): lazy (stream b)
 
-fun drop {a:type} (stream (a), int): stream (a)
-fun eof  {a:type} (stream (a)): bool
-
-symintr tostring
-//fun tostring_char (stream (char)): string
-//overload tostring with tostring_char
-
-
-//fun len (stream): int
+fun {a:t@ype} fprint_stream (out: FILEref, s: lazy (stream a), len: int, f: (FILEref, a) -> void): void
+overload fprint with fprint_stream
