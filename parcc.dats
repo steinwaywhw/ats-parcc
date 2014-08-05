@@ -5,19 +5,21 @@ staload sm = "./stream.sats"
 staload ut = "./unit.sats"
 staload pr = "./pair.sats"
 
-assume parser (i, o) = string -<cloref1> result (i, o)
+assume parser (i, o) = i -<cloref1> result (i, o)
 
 
 //
 // pargen
 //
 implement succeed {i} {o} (ret) = 
-	lam (sm) =<cloref1> Success (ret, sm)
+	lam (str) =<cloref1> Success (ret, str)
 
 implement literal {i} (match) = 	
 	lam (str) =<cloref1> let 
-		val len = min (strlen match, strlen str)
-		var head = substr (str, 0, len)
+		val str = sdsnewlen (str, strlen str)
+		val match = sdsnewlen (match, strlen match)
+		val len = min (sdslen match, sdslen str)
+		val head = sdsnewlen (str, 0, len)
 		val tail = substr (str, len)
 	in 
 		if equal ($sm.head (sm), match) then
