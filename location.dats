@@ -2,6 +2,72 @@
 
 staload "location.sats"
 
+assume position = '{line=int, col=int}
+assume range = '{a=position, b=position}
+assume location = '{file=string, r=range}
+
+implement Pos (line, col) = '{line=line, col=col}
+implement position_line (p) = p.line
+implement position_col (p) = p.col
+implement position_next (current, ch) = 
+	if ch = '\n'
+	then '{line = current.line + 1, col = 1}
+	else '{line = current.line, col = current.col + 1}
+
+implement position_origin = '{line=1, col=1}
+implement position_eof = '{line=~1, col=~1}
+
+implement Range (a, b) = '{a=a, b=b} 
+implement range_begin (range) = range.a
+implement range_end (range) = range.b
+
+local 
+	fun min (x:int, y:int) = if x < y then x else y
+	fun max (x:int, y:int) = if x > y then x else y
+in
+	implement range_merge (x, y) = '{a=min(x.a, y.a), b=max(x.b, y.b)}
+end
+
+implement Loc (file, r) = '{file=file, r=r} 
+implement location_file (loc) = loc.file
+implement location_range (loc) = loc.r
+
+(***************
+	Utilities
+ ***************)
+
+implement fprint_location (out, loc) = () where {
+	val _ = fprint (out, loc.file)
+	val _ = fprint (out, " [")
+	val _ = fprint (out, loc.r)
+	val _ = fprint (out, "]")
+}
+
+implement fprint_position (out, pos) = fprintf (out, "%d:%d", pos.line, pos.col)
+
+implement fprint_range (out, r) = () where {
+	val _ = fprint (out, r.a)
+	val _ = fprint (out, " - ")
+	val _ = fprint (out, r.b)
+}
+
+implement eq_pos_pos (a, b)			 = compare (a, b) = 0	
+implement eq_range_range (a, b)		 = a.a = b.a && a.b = b.b	
+implement eq_loc_loc (a, b)			 = a.file = b.file && a.r = b.r
+
+implement neq_pos_pos (a, b)		 = ~(a = b)
+implement neq_range_range (a, b)	 = ~(a = b)
+implement neq_loc_loc (a, b)		 = ~(a = b)
+
+implement gt_pos_pos (a, b)			 = compare (a, b) > 0	
+implement lt_pos_pos (a, b)			 = compare (a, b) < 0	
+implement gte_pos_pos (a, b)		 = compare (a, b) >= 0	
+implement lte_pos_pos (a, b)		 = compare (a, b) <= 0	
+
+implement compare_pos_pos (a, b)	 = if a.line = b.line then a.col - b.col else a.line - b.line	
+
+////
+
 implement fprint_position (out, pos) = 
 	case+ pos of Pos (line, col) => $extfcall (void, "fprintf", out, "%d:%d", line, col)
 
