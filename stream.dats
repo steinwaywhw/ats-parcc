@@ -79,3 +79,8 @@ implement {a} fprint_stream (out, xs, len, f) = case+ !xs of
 implement {a} {b} map (xs, f) = case+ !xs of 
 	| Nil () => $delay Nil () 
 	| Cons (x, xs) => $delay (f(x) :: map (xs, f))
+
+implement {a} {b} foldr (xs, base, f) = 
+	case+ xs of 
+	| Cons (x, xs) => f(x, foldr (xs, base, f))
+	| Nil () => base 

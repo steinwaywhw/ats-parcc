@@ -3,38 +3,42 @@ staload "pair.sats"
 staload "maybe.sats"
 staload "token.sats"
 staload sm = "stream.sats"
+staload "list.sats"
+staload "string.sats"
 
 staload _ = "stream.dats"
 staload _ = "location.dats"
+staload _ = "list.dats"
 
-assume parser (i, o) = lazy ($sm.stream i) -<cloref1> result (i, o)
 
+#define ATS_DYNLOADFLAG 0
+#define :: Cons
 
 //
 // pargen
 //
-implement succeed {i} {o} (ret) = 
-	lam (input) =<cloref1> Success (ret, input)
+implement {i} {o} succeed (ret) = 
+	lam (input) => Success (ret, input)
 
 
 
 //
 // parcom
 //
-implement alt {i} {o} (a, b) = 
-	lam (input) =<cloref1> 
+implement {i} {o} alt (a, b) = 
+	lam (input) => 
 		case+ apply (a, input) of 
 		| Success (ret, input) => Success (ret, input)
 		| Failure _ => apply (b, input)
 		
 
-implement seq {i} {o1,o2} (a, b) = 
+implement {i} {o1,o2} seq (a, b) = 
 	bind (a, 
-		lam (x) =<cloref1> 
-			bind (b, lam (y) =<cloref1> succeed (Pair (x, y))))
+		lam (x) => 
+			bind (b, lam (y) => succeed (Pair (x, y))))
 
-implement sat {i} {o} (p, f) = 
-	lam (input) =<cloref1> 
+implement {i} {o} sat (p, f) = 
+	lam (input) => 
 		case+ apply (p, input) of 
 		| Failure _ => Failure (input) 
 		| Success (ret, rest) =>
@@ -42,26 +46,35 @@ implement sat {i} {o} (p, f) =
 			then Success (ret, rest) 
 			else Failure (input)
 
-implement opt {i} {o} (p) =
-	lam (input) =<cloref1> 
+implement {i} {o} opt (p) =
+	lam (input) => 
 		case+ apply (p, input) of 
 		| Success (ret, rest) => Success (Just (ret), rest)
 		| Failure (input) => Success (Nothing (), input)
 
-implement rpt1 {i} {o} (p) = seq (p, p^+)
-implement rpt0 {i} {o} (p) = (p^+)^?
+implement {i} {o} rpt1 (p) = 
+	bind (p, 
+		lam (x) =>
+			bind (rpt0 p, lam (y) => succeed (x :: y)))
 
-implement apply {i} {o} (p, s) = p (s)
+implement {i} {o} rpt0 (p) = 
+	bind (opt (rpt1 p), lam (x) => 
+		case+ x of 
+		| Just (x) => succeed (x)
+		| Nothing () => succeed (Nil ())
+	)
 
-implement bind {i} {o1,o2} (p, f) = 
-	lam (input) =<cloref1> 
+implement {i} {o} apply (p, s) = p (s)
+
+implement {i} {o1,o2} bind (p, f) = 
+	lam (input) => 
 		case+ apply (p, input) of 
 			| Success (ret, input) => apply (f (ret), input)
 			| Failure (input) => Failure (input)
 
 
 implement lit_char (match) = 
-	lam (sm) =<cloref1> 
+	lam (sm) => 
 		case+ !sm of
 		| $sm.Nil () => Failure (sm)
 		| $sm.Cons (p, rest) => let
@@ -72,3 +85,26 @@ implement lit_char (match) =
 			else Failure ($delay ($sm.Cons (p, rest)))
 		end
 
+implement lit_string (match) = 
+	lam (sm) => let 
+		val original = sm 
+		val len = strlen (match)
+
+		var min: position
+		var max: position
+
+		fun loop (index: int): bool = 
+			if index = len 
+			then true
+			else case+ !sm of 
+				| Nil () => false 
+				| Cons (x, xs) => let 
+					val Pair (ch, pos) = x 
+					val _ = if index = 0 then min := pos else if compare (min, pos) > 0 then min := pos
+					val _ = if index = 0 then max := pos else if compare (max, pos) < 0 then max := pos
+				in
+					(x = match[index]) && loop (index + 1)
+				end
+	in 
+		if loop (0)
+		then Success (TString (match), FileRange ())

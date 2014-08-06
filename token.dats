@@ -1,5 +1,7 @@
+staload "libc/SATS/stdio.sats"
 staload "token.sats"
-
+staload "location.sats"
+#define ATS_DYNLOADFLAG 0
 
 implement fprint_token (out, t) = 
 	case+ t of 

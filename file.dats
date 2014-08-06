@@ -22,18 +22,18 @@ implement filestream (path) = sm where {
 		} 
 	end
 
-	fun appendloc (s: lazy ($sm.stream char), line: int, col: int): lazy ($sm.stream (pair (char, location))) = let
-		val current = FilePos (path, Pos (line, col))
-	in case- !s of
-		| $sm.Nil () => $delay $sm.Nil ()
-		| $sm.Cons (x, xs) => 
-			if x = '\n'
-			then $delay ($sm.Cons (Pair (x, current), appendloc (xs, line+1, 1)))
-			else $delay ($sm.Cons (Pair (x, current), appendloc (xs, line, col+1)))
-	end
-
 	val file = fopen_ref_exn (path, file_mode_r)
-	val sm = appendloc (tostream file, 1, 1)
+	val sm = tostream file
 }
-	
 
+implement append_position (xs, line, col) = 
+	case+ !xs of 
+	| $sm.Nil _ => $delay $sm.Nil()
+	| $sm.Cons (x, xs) =>
+		if x = '\n'
+		then $delay ($sm.Cons (Pair (x, Pos (line, col)), append_position (xs, line + 1, 1)))
+		then $delay ($sm.Cons (Pair (x, Pos (line, col)), append_position (xs, line, col + 1)))
+
+implement current_position (xs) = 
+	case+ !xs of 
+	| $sm.Nil _ => 
