@@ -8,7 +8,7 @@ $script = <<SCRIPT
   sed -ri 's/#force_color_prompt=yes/force_color_prompt=yes/g' /home/vagrant/.bashrc
   sed -ri 's/force_color_prompt=no/#force_color_prompt=no/g' /home/vagrant/.bashrc
   apt-get update
-  apt-get install -y libgmp3-dev make gcc build-essential wget bash
+  apt-get install -y libgmp3-dev make gcc build-essential wget bash gdb git
   export PATSHOME=$PWD
  
   wget http://sourceforge.net/projects/ats2-lang/files/latest/download?source=files -O - | tar -zvx --strip-components=1 -f -       

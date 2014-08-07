@@ -1,5 +1,6 @@
 staload "util/util.sats"
 staload "file/location.sats"
+staload "util/list.sats"
 
 abstype token = ptr
 
@@ -19,5 +20,9 @@ fun token_make (tokennode, location): token
 
 fun fprint_token (out: FILEref, t: token): void
 fun fprint_tokennode (out: FILEref, t: tokennode): void
+fun fprint_token_list (out: FILEref, ts: list (token), int): void
 overload fprint with fprint_token
 overload fprint with fprint_tokennode
+overload fprint with fprint_token_list 
+
+

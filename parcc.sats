@@ -5,7 +5,7 @@ staload "lexing/token.sats"
 staload "util/maybe.sats"
 staload "file/location.sats"
 staload "util/list.sats"
-staload sm = "util/stream.sats"
+staload "util/stream.sats"
 
 
 datatype result (i:t@ype, o:t@ype) = 
@@ -49,7 +49,7 @@ postfix 99 rpt1 prt0 opt
 // lexer
 //
 symintr literal
-fun lit_char (input: char): parser (lazy ($sm.stream (pair (char, location))), token)
-fun lit_string (input: string): parser (lazy ($sm.stream (pair (char, location))), token)
+fun lit_char (input: char): parser (lazy (stream (pair (char, location))), token)
+fun lit_string (input: string): parser (lazy (stream (pair (char, location))), token)
 overload literal with lit_char 
 overload literal with lit_string
