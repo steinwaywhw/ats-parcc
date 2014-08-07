@@ -1,8 +1,0 @@
-staload "./maybe.sats"
-staload "./string.sats"
-staload "./list.sats"
-staload "./map.sats"
-staload "./unit.sats"
-staload "./token.sats"
-staload "./pair.sats"
-staload "./util.sats"

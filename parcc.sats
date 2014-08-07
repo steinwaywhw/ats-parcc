@@ -1,11 +1,11 @@
 #include "share/atspre_staload.hats"
 
-staload "pair.sats"
-staload "token.sats"
-staload "maybe.sats"
-staload "location.sats"
-staload "list.sats"
-staload sm = "stream.sats"
+staload "util/pair.sats"
+staload "lexing/token.sats"
+staload "util/maybe.sats"
+staload "file/location.sats"
+staload "util/list.sats"
+staload sm = "util/stream.sats"
 
 
 datatype result (i:t@ype, o:t@ype) = 
@@ -32,6 +32,8 @@ fun {i:t@ype} {o:t@ype}    	rpt1  (parser (i, o)): parser (i, list o)
 
 fun {i:t@ype} {o1,o2:t@ype} bind  (parser (i, o1), o1 -<cloref1> parser (i, o2)): parser (i, o2)
 fun {i:t@ype} {o:t@ype} 	apply (parser (i, o), i): result (i, o)
+
+fun {i,o:t@ype} {r:t@ype} 	red   (parser (i, o), f: o -<cloref1> r): parser (i, r)
 
 (*
 overload / with alt

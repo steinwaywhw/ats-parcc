@@ -1,4 +1,4 @@
-staload "maybe.sats"
+staload "util/maybe.sats"
 
 abstype map (k:t@ype, v:t@ype)
 typedef map (k:t@ype) = [v:t@ype] map (k, v)

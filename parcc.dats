@@ -1,19 +1,19 @@
-staload "parcc.sats"
-staload "pair.sats"
-staload "maybe.sats"
-staload "token.sats"
-staload sm = "stream.sats"
-staload "list.sats"
-staload "string.sats"
-staload "location.sats"
-
-staload _ = "stream.dats"
-staload _ = "location.dats"
-staload _ = "list.dats"
-
 #include "share/atspre_staload.hats"
 
-#define ATS_DYNLOADFLAG 0
+staload "parcc.sats"
+staload "util/pair.sats"
+staload "util/maybe.sats"
+staload "lexing/token.sats"
+staload sm = "util/stream.sats"
+staload "util/list.sats"
+staload "string/string.sats"
+staload "file/location.sats"
+
+staload _ = "util/stream.dats"
+staload _ = "file/location.dats"
+staload _ = "util/list.dats"
+staload _ = "util/pair.dats"
+
 #define :: Cons
 
 //
@@ -75,31 +75,32 @@ implement {i} {o1,o2} bind (p, f) =
 			| Failure (input) => Failure (input)
 
 
+implement {i, o} {r} red (p, f) = 
+	bind (p, lam (x) => succeed (f x))
+
+
 implement lit_char (match) = 
 	lam (sm) => 
 		case+ !sm of
 		| $sm.Nil () => Failure (sm)
-		| $sm.Cons (p, rest) => let
-			val Pair (c, loc) = p 
-		in 
-			if c = match
-			then Success (TChar (c, loc), rest)
+		| $sm.Cons (p, rest) => 
+			if fst p = match
+			then Success (token_make (TChar (fst p), snd p), rest)
 			else Failure ($delay ($sm.Cons (p, rest)))
-		end
+		
 
 implement lit_string (match) = let 
 	fun genpar (index: int):<cloref1> parser (lazy ($sm.stream (pair (char, location))), location) =
-		if index = $extfcall (int, "strlen", match) - 1
-		then bind (lit_char match[index], lam (x) => succeed (get_token_location x))
-		else bind (
+		if index = len (match) - 1
+		then red (lit_char match[index], lam (x) => token_get_location x)
+		else red (
 				seq (lit_char match[index], genpar (index+1)), 
-				lam (x) => ret where {
+				lam (x) => loc where {
 					val Pair (tk, loc) = x 
-					val range = range_merge (location_range (get_token_location tk), location_range loc)
+					val range = range_merge (location_range (token_get_location tk), location_range loc)
 					val loc = Loc (location_file loc, range)
-					val ret = succeed (loc)
 				}
 			)
 in 
-	bind (genpar (0), lam (x) => succeed (TString (match, x)))
+	red (genpar (0), lam (x) => token_make (TString (match), x))
 end

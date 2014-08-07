@@ -1,15 +1,9 @@
 #include "share/atspre_staload.hats"
-#define ATS_DYNLOADFLAG 0
-staload "location.sats"
+staload "file/location.sats"
 
-typedef position_t = '{line=int, col=int}
-assume position = position_t
-
-typedef range_t = '{a=position_t, b=position_t}
-assume range = range_t
-
-typedef location_t = '{file=string, r=range_t}
-assume location = location_t
+assume position = '{line=int, col=int}
+assume range = '{a=position, b=position}
+assume location = '{file=string, r=range}
 
 implement Pos (line, col) = '{line = line, col = col}
 implement position_line (p) = p.line

@@ -1,10 +1,10 @@
-staload "list.sats"
-staload "string.sats"
-#define :: Cons
+staload "util/list.sats"
+staload "string/string.sats"
 #include "share/atspre_staload.hats"
-#define ATS_DYNLOADFLAG 0
 
-implement explode (str) = let 
+#define :: Cons
+
+implement string_explode (str) = let 
 	val len = $extfcall (int, "strlen", str)
 	fun loop (index: int, ret: list (char)): list (char) =
 		if index >= len
@@ -23,3 +23,7 @@ int string_get (char *str, int pos) {
 	}
 }
 %}
+
+implement string_len (str) = x where {
+	val x = $extfcall (int, "strlen", str)
+}

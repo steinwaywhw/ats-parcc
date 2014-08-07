@@ -1,24 +1,25 @@
 #include "share/atspre_staload.hats"
-#define ATS_DYNLOADFLAG 0
-staload "file.sats"
-staload "pair.sats"
-staload "location.sats"
+staload "file/file.sats"
+staload "util/pair.sats"
+staload "file/location.sats"
 staload "libc/SATS/stdio.sats"
-staload sm = "stream.sats"
+staload sm = "util/stream.sats"
 staload "parcc.sats"
-staload "token.sats"
+staload "lexing/token.sats"
 
-staload _ = "token.dats"
-staload _ = "file.dats"
-staload _ = "stream.dats"
-staload _ = "location.dats"
+staload _ = "lexing/token.dats"
+staload _ = "file/file.dats"
+staload _ = "util/stream.dats"
+staload _ = "file/location.dats"
 staload _ = "parcc.dats"
-staload _ = "pair.dats"
+staload _ = "util/pair.dats"
+
+dynload "dynload.dats"
 
 
 extern fun test (path: string): void
 implement test (path) = () where {
-	val sm = append_location (append_position (filestream path, Pos (1, 1)), path)
+	val sm = file_append_location (file_append_position (file_get_stream path, Pos (1, 1)), path)
 
 	val lex = alt (literal "#incccc", literal "#include") 
 	val lex = alt (lex, literal "hhh")
@@ -40,5 +41,5 @@ implement test (path) = () where {
 
 
 implement main0 () = () where {
-	val _ = test("./_test.dats")
+	val _ = test("./test/test.dats")
 }

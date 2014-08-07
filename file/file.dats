@@ -1,17 +1,17 @@
 #include "share/atspre_staload.hats"
-#define ATS_DYNLOADFLAG 0
-
-staload "file.sats"
 staload "libc/SATS/stdio.sats"
-staload sm = "stream.sats"
-staload "location.sats"
-staload "pair.sats"
 
-staload _ = "stream.dats"
-staload _ = "location.dats"
+staload "file/file.sats"
+staload "file/location.sats"
+
+staload "util/pair.sats"
+staload sm = "util/stream.sats"
+
+staload _ = "util/stream.dats"
+staload _ = "file/location.dats"
 
 
-implement filestream (path) = sm where {
+implement file_get_stream (path) = sm where {
 	fun tostream (file: FILEref): lazy ($sm.stream char) = let
 		val c = int2char0 (fgetc file)
 	in 
@@ -26,12 +26,12 @@ implement filestream (path) = sm where {
 	val sm = tostream file
 }
 
-implement append_position (xs, p) = 
+implement file_append_position (xs, p) = 
 	case+ !xs of 
 	| $sm.Nil _ => $delay $sm.Nil()
-	| $sm.Cons (x, xs) => $delay $sm.Cons (Pair (x, p), append_position (xs, position_next (p, x)))
+	| $sm.Cons (x, xs) => $delay $sm.Cons (Pair (x, p), file_append_position (xs, position_next (p, x)))
 
-implement append_location (xs, file) = 
+implement file_append_location (xs, file) = 
 	$sm.map (xs, lam (x) => v where {
 			val Pair (ch, pos) = x 
 			val v = Pair (ch, Loc (file, Range (pos, pos)))
