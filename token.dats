@@ -1,12 +1,12 @@
 staload "libc/SATS/stdio.sats"
 staload "token.sats"
 staload "location.sats"
+staload _ = "location.dats"
+
 #define ATS_DYNLOADFLAG 0
 
 implement fprint_token (out, t) = 
 	case+ t of 
-	| TNone () => fprint (out, "TNone")
-	| TEof () => fprint (out, "TEof")
 	| TComment (c, l) => () where {
 		val _ = $extfcall (void, "fprintf", out, "TComment (%s) at ", c)
 		val _ = fprint (out, l)
@@ -33,3 +33,13 @@ implement fprint_token (out, t) =
 	}
 
 
+implement get_token_file (t) = location_file (get_token_location t)
+implement get_token_range (t) = location_range (get_token_location t)
+implement get_token_location (t) = 
+	case+ t of 
+	| TComment (_, l) 	=> l 
+	| TSpace (l) 		=> l 
+	| TChar (_, l) 		=> l
+	| TString (_, l) 	=> l 
+	| TId (_, l) 		=> l 
+	| TInt (_, l) 		=> l

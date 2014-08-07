@@ -26,14 +26,14 @@ implement filestream (path) = sm where {
 	val sm = tostream file
 }
 
-implement append_position (xs, line, col) = 
+implement append_position (xs, p) = 
 	case+ !xs of 
 	| $sm.Nil _ => $delay $sm.Nil()
-	| $sm.Cons (x, xs) =>
-		if x = '\n'
-		then $delay ($sm.Cons (Pair (x, Pos (line, col)), append_position (xs, line + 1, 1)))
-		then $delay ($sm.Cons (Pair (x, Pos (line, col)), append_position (xs, line, col + 1)))
+	| $sm.Cons (x, xs) => $delay $sm.Cons (Pair (x, p), append_position (xs, position_next (p, x)))
 
-implement current_position (xs) = 
-	case+ !xs of 
-	| $sm.Nil _ => 
+implement append_location (xs, file) = 
+	$sm.map (xs, lam (x) => v where {
+			val Pair (ch, pos) = x 
+			val v = Pair (ch, Loc (file, Range (pos, pos)))
+		})
+

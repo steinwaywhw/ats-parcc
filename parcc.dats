@@ -5,11 +5,13 @@ staload "token.sats"
 staload sm = "stream.sats"
 staload "list.sats"
 staload "string.sats"
+staload "location.sats"
 
 staload _ = "stream.dats"
 staload _ = "location.dats"
 staload _ = "list.dats"
 
+#include "share/atspre_staload.hats"
 
 #define ATS_DYNLOADFLAG 0
 #define :: Cons
@@ -85,26 +87,19 @@ implement lit_char (match) =
 			else Failure ($delay ($sm.Cons (p, rest)))
 		end
 
-implement lit_string (match) = 
-	lam (sm) => let 
-		val original = sm 
-		val len = strlen (match)
-
-		var min: position
-		var max: position
-
-		fun loop (index: int): bool = 
-			if index = len 
-			then true
-			else case+ !sm of 
-				| Nil () => false 
-				| Cons (x, xs) => let 
-					val Pair (ch, pos) = x 
-					val _ = if index = 0 then min := pos else if compare (min, pos) > 0 then min := pos
-					val _ = if index = 0 then max := pos else if compare (max, pos) < 0 then max := pos
-				in
-					(x = match[index]) && loop (index + 1)
-				end
-	in 
-		if loop (0)
-		then Success (TString (match), FileRange ())
+implement lit_string (match) = let 
+	fun genpar (index: int):<cloref1> parser (lazy ($sm.stream (pair (char, location))), location) =
+		if index = $extfcall (int, "strlen", match) - 1
+		then bind (lit_char match[index], lam (x) => succeed (get_token_location x))
+		else bind (
+				seq (lit_char match[index], genpar (index+1)), 
+				lam (x) => ret where {
+					val Pair (tk, loc) = x 
+					val range = range_merge (location_range (get_token_location tk), location_range loc)
+					val loc = Loc (location_file loc, range)
+					val ret = succeed (loc)
+				}
+			)
+in 
+	bind (genpar (0), lam (x) => succeed (TString (match, x)))
+end

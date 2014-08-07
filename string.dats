@@ -14,7 +14,7 @@ in
 	loop (0, Nil ())
 end
 
-%{
+%{#
 int string_get (char *str, int pos) {
 	if (pos < strlen(str)) {
 		return str[pos];

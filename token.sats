@@ -2,8 +2,6 @@ staload "util.sats"
 staload "location.sats"
 
 datatype token = 
-	| TNone of ()
-	| TEof of ()
 	| TComment of (string, location)
 	| TSpace of (location)
 	| TChar of (char, location)
@@ -14,3 +12,7 @@ datatype token =
 
 fun fprint_token (out: FILEref, t: token): void
 overload fprint with fprint_token
+
+fun get_token_file (token): string
+fun get_token_range (token): range
+fun get_token_location (token): location

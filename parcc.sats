@@ -49,3 +49,5 @@ postfix 99 rpt1 prt0 opt
 symintr literal
 fun lit_char (input: char): parser (lazy ($sm.stream (pair (char, location))), token)
 fun lit_string (input: string): parser (lazy ($sm.stream (pair (char, location))), token)
+overload literal with lit_char 
+overload literal with lit_string

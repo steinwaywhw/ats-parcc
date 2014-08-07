@@ -1,6 +1,6 @@
-abstype position 
-abstype range
-abstype location
+abstype position = ptr
+abstype range = ptr
+abstype location = ptr
 
 fun Pos (line: int, col: int): position 
 fun position_next (current: position, ch: char): position 
@@ -31,20 +31,20 @@ overload fprint with fprint_range
 overload fprint with fprint_location
 overload fprint with fprint_position 
 
-fun eq_pos_pos (pos, pos): bool
+fun eq_pos_pos (position, position): bool
 fun eq_range_range (range, range): bool
 fun eq_loc_loc (location, location): bool
 
-fun neq_pos_pos (pos, pos): bool
+fun neq_pos_pos (position, position): bool
 fun neq_range_range (range, range): bool
 fun neq_loc_loc (location, location): bool
 
-fun gt_pos_pos (pos, pos): bool
-fun lt_pos_pos (pos, pos): bool
-fun gte_pos_pos (pos, pos): bool
-fun lte_pos_pos (pos, pos): bool
+fun gt_pos_pos (position, position): bool
+fun lt_pos_pos (position, position): bool
+fun gte_pos_pos (position, position): bool
+fun lte_pos_pos (position, position): bool
 
-fun compare_pos_pos (pos, pos): int
+fun compare_pos_pos (position, position): int
 
 overload compare with compare_pos_pos
 

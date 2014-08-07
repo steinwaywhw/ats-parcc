@@ -1,6 +1,6 @@
 staload "list.sats"
 staload "maybe.sats"
-
+#define ATS_DYNLOADFLAG 0
 implement {a} empty  (xs) = 
 	case+ xs of 
 	| Cons _ => false
