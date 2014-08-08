@@ -1,4 +1,3 @@
 
 
-datatype unit = 
-    | Unit of ()
+datatype unit = Unit of ()

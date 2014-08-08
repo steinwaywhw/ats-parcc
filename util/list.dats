@@ -1,5 +1,6 @@
 staload "util/list.sats"
 staload "util/maybe.sats"
+#include "share/atspre_staload.hats"
 
 implement {a} list_empty  (xs) = 
 	case+ xs of 
@@ -64,3 +65,12 @@ implement {a,b} {r} list_zip (xs, ys, f) =
 	if list_empty xs || list_empty ys
 	then Nil ()
 	else Cons (f (maybe_unjust (list_head xs), maybe_unjust (list_head ys)), zip (list_tail xs, list_tail ys, f))
+
+implement list_toint (xs, base) = let 
+	fun loop (current: int, rest: list (int)): int = 
+		case+ xs of 
+		| Nil () => current
+		| Cons (x, xs) => loop (current * base + x, xs)
+in 
+	loop (0, xs)
+end

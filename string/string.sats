@@ -6,3 +6,5 @@ fun string_len (string): int
 
 overload [] with string_get
 overload len with string_len
+
+fun string_find (string, char): int = "mac#"

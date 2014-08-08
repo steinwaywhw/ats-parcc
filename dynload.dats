@@ -6,5 +6,6 @@ dynload "util/list.dats"
 dynload "util/pair.dats"
 dynload "util/stream.dats"
 dynload "util/maybe.dats"
+//dynload "util/writer.dats"
 
 dynload "parcc.dats"

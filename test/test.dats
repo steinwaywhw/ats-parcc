@@ -3,6 +3,7 @@ staload "libc/SATS/stdio.sats"
 
 staload "parcc.sats"
 staload "lexing/token.sats"
+staload "lexing/lexcc.sats"
 staload "file/file.sats"
 staload "file/location.sats"
 staload "util/pair.sats"
@@ -18,21 +19,12 @@ staload _ = "util/pair.dats"
 staload _ = "util/maybe.dats"
 staload _ = "util/list.dats"
 staload _ = "lexing/token.dats"
-
+staload _ = "lexing/lexcc.dats"
 
 dynload "dynload.dats"
 
 
-infixr 20 &&& |||
-overload &&& with seq
-overload ||| with alt
 
-postfix 99 ***
-postfix 99 +++
-postfix 99 ???
-overload *** with rpt0
-overload +++ with rpt1
-overload ??? with opt
 
 extern fun test (path: string): void
 
@@ -40,15 +32,11 @@ implement test (path) = () where {
 	val sm = file_append_location (file_append_position (file_get_stream path, Pos (1, 1)), path)
 
 
-	val lexid = literal "x" ||| literal "y" ||| literal "z" 
-	val lexop = literal "+" ||| literal "=>" ||| literal "-"
-	val lexws = literal " " ||| literal '\n'
-	val lexkw = literal "lam"
-	val lexsp = literal ','
+	val id = red (alpha()^*, lam (x) -> 
+	val ws = skip whitespace()^*
+	val key = literal "lam"
+	val operator = literal "=" <|> literal "=>" <|> literal "++"
 
-	val par = lexkw &&& lexws+++ &&& (lexid &&& (lexws*** ||| lexsp)???)+++ &&& literal "=>" &&& lexws*** &&& (lexid &&& (lexws*** ||| lexop)???)+++
-
-	val t = apply (par, sm)
 
 	fun p (out: FILEref, p: pair (char, location)): void = () where {
 		val Pair (c, loc) = p 

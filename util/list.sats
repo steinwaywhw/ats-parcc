@@ -32,3 +32,6 @@ overload map 	 with list_map
 overload foldl 	 with list_foldl
 overload foldr 	 with list_foldr
 overload zip 	 with list_zip
+
+
+fun list_toint (list (int), base: int): int

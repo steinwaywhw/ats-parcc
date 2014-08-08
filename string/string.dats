@@ -22,6 +22,15 @@ int string_get (char *str, int pos) {
 		return 0;
 	}
 }
+
+int string_find (char *str, int ch) {
+	char *p = strchr (str, ch);
+	if (p == NULL)
+		return -1;
+	else 
+		return p - str;
+}
+
 %}
 
 implement string_len (str) = x where {
