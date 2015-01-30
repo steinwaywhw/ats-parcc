@@ -2,7 +2,7 @@ abstype position = ptr
 abstype range = ptr
 abstype location = ptr
 
-fun Pos (line: int, col: int): position 
+fun Pos (row: int, col: int): position 
 fun position_next (current: position, ch: char): position 
 fun position_line (position): int 
 fun position_col (position): int 
@@ -15,7 +15,7 @@ fun range_begin (range): position
 fun range_end (range): position 
 fun range_merge (range, range): range
 
-fun Loc (string, range): location 
+fun Loc (file: string, r: range): location 
 fun location_file (location): string
 fun location_range (location): range
 

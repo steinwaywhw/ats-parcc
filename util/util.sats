@@ -4,21 +4,21 @@ symintr gte
 symintr lt
 symintr lte
 symintr compare
+symintr empty
 symintr min 
 symintr max
 
-symintr empty
 symintr append
+symintr concat
 symintr head
 symintr tail
 symintr take
 symintr drop
-symintr concat
 symintr map 
+symintr zip
 symintr filter
 symintr foldl
 symintr foldr
-symintr zip
 symintr foreach
 
 symintr fst

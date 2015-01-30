@@ -1,13 +1,16 @@
+#include "share/atspre_staload.hats"
 staload "util/list.sats"
 staload "util/maybe.sats"
-#include "share/atspre_staload.hats"
 
 implement {a} list_empty  (xs) = 
 	case+ xs of 
 	| Cons _ => false
 	| Nil  _ => true
 
+#define :: Cons
+
 implement {a} list_append (xs, x) = Cons (x, xs)
+
 implement {a} list_head (xs) = 
 	case+ xs of 
 	| Cons (x, _) => Just (x)
@@ -24,9 +27,9 @@ implement {a} list_drop (xs, i) =
 	else list_drop (list_tail xs, i - 1)
 
 implement {a} list_concat (xs, ys) = 
-	if list_empty xs 
-	then ys 
-	else list_concat (list_tail xs, list_append (ys, maybe_unjust (list_head xs))) 
+	case+ list_head xs of 
+	| Just x  => list_concat (list_tail xs, list_append (ys, x))
+	| Nothing => ys
 
 implement {a} {b} list_map (xs, f) =
 	case+ xs of 
@@ -44,9 +47,11 @@ implement {a} {b} list_foldl (xs, base, f) =
 	| Cons (x, xs) => list_foldl (xs, f (x, base), f)
 
 implement {a} list_take (xs, len) = 
-	if list_empty xs || len = 0
+	if len = 0
 	then Nil ()
-	else Cons (maybe_unjust (list_head xs), list_take (list_tail xs, len - 1))
+	else case+ list_head xs of 
+		| Just x  => Cons (x, list_take (list_tail xs, len - 1))
+		| Nothing => Nil ()
 
 implement {a} list_filter (xs, f) =
 	case+ xs of 
@@ -62,15 +67,19 @@ implement {a} list_foreach (xs, f) =
 	| Cons (x, xs) => list_foreach (xs, f) where { val _ = f(x) }
 
 implement {a,b} {r} list_zip (xs, ys, f) = 
-	if list_empty xs || list_empty ys
-	then Nil ()
-	else Cons (f (maybe_unjust (list_head xs), maybe_unjust (list_head ys)), zip (list_tail xs, list_tail ys, f))
+	case+ list_head xs of
+	| Nothing => Nil ()
+	| Just x => 
+		case+ list_head ys of 
+		| Nothing => Nil ()
+		| Just y => Cons (f (x, y), list_zip (list_tail xs, list_tail ys, f))
 
-implement list_toint (xs, base) = let 
-	fun loop (current: int, rest: list (int)): int = 
-		case+ xs of 
-		| Nil () => current
-		| Cons (x, xs) => loop (current * base + x, xs)
-in 
-	loop (0, xs)
-end
+implement list_len (xs) = 
+	if list_empty xs
+	then 0
+	else 1 + list_len (list_tail xs)
+
+implement list_reverse (xs) = 
+	case+ xs of 
+	| x :: xs => list_reverse (xs)
+	| Nil ()  => Nil ()
