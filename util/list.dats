@@ -2,12 +2,18 @@
 staload "util/list.sats"
 staload "util/maybe.sats"
 
-implement {a} list_empty  (xs) = 
+#define :: Cons
+
+
+implement list_empty {a} (xs) = 
 	case+ xs of 
 	| Cons _ => false
 	| Nil  _ => true
 
-#define :: Cons
+implement list_len {a} (xs) = 
+	case+ xs of 
+	| Nil () => 0
+	| x :: xs => 1 + list_len (xs)
 
 implement {a} list_append (xs, x) = Cons (x, xs)
 
@@ -68,18 +74,15 @@ implement {a} list_foreach (xs, f) =
 
 implement {a,b} {r} list_zip (xs, ys, f) = 
 	case+ list_head xs of
-	| Nothing => Nil ()
+	| Nothing () => Nil ()
 	| Just x => 
 		case+ list_head ys of 
-		| Nothing => Nil ()
+		| Nothing () => Nil ()
 		| Just y => Cons (f (x, y), list_zip (list_tail xs, list_tail ys, f))
 
-implement list_len (xs) = 
-	if list_empty xs
-	then 0
-	else 1 + list_len (list_tail xs)
-
-implement list_reverse (xs) = 
+implement {a} list_reverse (xs) = 
 	case+ xs of 
 	| x :: xs => list_reverse (xs)
 	| Nil ()  => Nil ()
+
+

@@ -1,22 +1,24 @@
 #include "share/atspre_staload.hats"
+staload UN = "prelude/SATS/unsafe.sats"
 
 staload "util/util.sats"
 staload "util/list.sats"
 staload "string/string.sats"
-staload UN = "prelude/SATS/unsafe.sats"
+
+staload _ = "util/list.dats"
 
 #define :: Cons
 
 implement string_unexplode (xs) = let
 	val length = len (xs) + 1
-	val g1 = g1ofg0 (length)
+	val g1 = g1ofg0 length
 	val _ = assertloc (g1 > 0)
 
-	val (view, gc | ptr) = malloc_gc (i2sz (g1))
+	val (view, gc | ptr) = malloc_gc (i2sz g1)
 
 	fun loop (xs: list char, p: ptr): void = 
 		case+ xs of
-		| x :: xs => loop (xs, ptr_succ (p)) where { val _ = $UN.ptr0_set<char>(p, x) }
+		| x :: xs => loop (xs, ptr_succ<char>(p)) where { val _ = $UN.ptr0_set<char>(p, x) }
 		| Nil () => $UN.ptr0_set<char>(p, $UN.cast{char}(0))
 
 	val _ = loop (xs, ptr)
@@ -24,7 +26,8 @@ in
 	$UN.castvwtp0{string}((view, gc | ptr))
 end
 
-////
+
+
 
 implement string_explode (str) = let 
 	val len = $extfcall (int, "strlen", str)
@@ -87,10 +90,10 @@ implement string_split (s, sep) = let
 		else ls 
 	end 
 in 
-	list_reverse (loop (s, Nil ()))
+	list_reverse<string>(loop (s, Nil ()))
 end
 
-(*implement string_concat (a, b) = let 
+implement string_concat (a, b) = let 
 	val lena = g1ofg0 (string_len a)
 	val lenb = g1ofg0 (string_len b)
 	val len = lena + lenb + 1
@@ -100,21 +103,21 @@ end
 
 	fun loop (index: int, p: ptr): void = 
 		if index < lena
-		then loop (index + 1, ptr_succ p) where { val _ = $UN.ptr0_set<char>(p, a[index]) }
+		then loop (index + 1, ptr_succ<char> p) where { val _ = $UN.ptr0_set<char>(p, a[index]) }
 		else 
 			if index - lena < lenb
-			then loop (index + 1, ptr_succ p) where { val _ = $UN.ptr0_set<char>(p, b[index - lena]) }
+			then loop (index + 1, ptr_succ<char> p) where { val _ = $UN.ptr0_set<char>(p, b[index - lena]) }
 			else $UN.ptr0_set<char>(p, $UN.cast{char}(0))
 
 	val _ = loop (0, ptr)
 in 
 	$UN.castvwtp0{string}((view, gc | ptr))
-end*)
+end
 
 implement string_append (s, c) = string_concat (s, string_from_char c)
 implement string_prepend (s, c) = string_concat (string_from_char (c), s)
 
-(*implement string_range (s, b, e) = 
+implement string_range (s, b, e) = 
 	if b = e then ""
 	else if b > e then string_range (s, e, b) 
 	else if b < 0 then string_range (s, 0, e)
@@ -127,13 +130,13 @@ implement string_prepend (s, c) = string_concat (string_from_char (c), s)
 
 		fun loop (index: int, p: ptr): void = 
 			if index <= e
-			then loop (index + 1, ptr_succ p) where { val _ = $UN.ptr0_set<char>(p, s[index]) }
+			then loop (index + 1, ptr_succ<char> p) where { val _ = $UN.ptr0_set<char>(p, s[index]) }
 			else $UN.ptr0_set<char>(p, $UN.cast{char}(0))
 
 		val _ = loop (b, ptr)
 in 
 	$UN.castvwtp0{string}((view, gc | ptr))
-end*)
+end
 
 implement string_compare (a, b) = $extfcall (int, "strcmp", a, b)
 implement string_eq (a, b) = string_compare (a, b) = 1
@@ -161,6 +164,7 @@ int string_find (char *str, char *sep) {
 
 %}
 
+dynload "util/list.dats"
 
 implement main0 () = {} where {
 	val a = string_from_char('c')
