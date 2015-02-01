@@ -9,6 +9,7 @@ symintr min
 symintr max
 
 symintr append
+symintr prepend
 symintr concat
 symintr head
 symintr tail
@@ -25,3 +26,13 @@ symintr fst
 symintr snd
 
 symintr len
+
+
+symintr show
+
+overload show with print_bool
+overload show with print_string
+overload show with print_char
+overload show with print_int
+overload show with print_float
+overload show with print_double

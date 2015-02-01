@@ -4,7 +4,7 @@ datatype maybe (a:t@ype) =
 	| Nothing of ()
 	| Just of (a)
 
-fun {a,b:t@ype} maybe_bind (maybe a, a -> maybe b): maybe b
+fun {a,b:t@ype} maybe_bind (maybe a, a -> b): maybe b
 
 
 

@@ -1,33 +1,37 @@
+staload "util/util.sats"
 staload "util/stream.sats"
 staload "util/maybe.sats"
+staload LIST = "util/list.sats"
+staload _ = "util/list.dats"
 
 #define :: Cons
 
-implement {a} stream_interleave (xs, ys) = 
-	$delay (
-		case+ !xs of
-		| Cons (x, xs) => (x :: stream_interleave (ys, xs))
-		| Nil () => !ys
-	)
+implement {a} stream_interleave (xs, ys) =
+	case+ !xs of
+	| x :: xs => $delay x :: stream_interleave (ys, xs)
+	| Nil ()  => ys
+
  
 implement {a} stream_merge (xs, ys, f) = 
-	$delay (
-		let
-			val- Cons (x, xs0) = !xs
-			val- Cons (y, ys0) = !ys
-		in if f (x, y) < 0 
-			then Cons (x, stream_merge (xs0, ys, f)) 
-			else Cons (y, stream_merge (ys0, xs, f))
-		end
-	)
+	case+ !xs of 
+	| Nil _ => ys
+	| x :: xs0 =>
+		case+ !ys of 
+		| Nil _ => $delay Nil ()
+		| y :: ys0 => 
+			if f (x, y) < 0
+			then $delay x :: stream_merge (xs0, ys, f)
+			else $delay y :: stream_merge (xs, ys0, f)
 
-implement {a} stream_head (xs) = case+ !xs of
-	| Cons (x, xs) => Just (x)
-	| Nil () => Nothing ()
- 
-implement {a} stream_tail (xs) = case+ !xs of
-	| Cons (_, xs) => xs
-	| Nil () => $delay (Nil ())
+implement {a} stream_head (xs) = 
+	case+ !xs of
+	| x :: _ => Just x
+	| Nil () => Nothing () 
+
+implement {a} stream_tail (xs) = 
+	case+ !xs of
+	| _ :: xs => xs
+	| Nil _   => $delay Nil ()
  
 implement {a} stream_drop (xs, n) =
 	if n <= 0
@@ -37,34 +41,35 @@ implement {a} stream_drop (xs, n) =
 implement {a} stream_take (xs, n) = 
 	if n <= 0 
 	then $delay (Nil ())
-	else case+ stream_head (xs) of
-		| Nothing () => $delay (Nil ())
-		| Just (x) => $delay (x :: stream_take (stream_tail (xs), n-1))
+	else case+ !xs of
+		| Nil ()  => $delay Nil ()
+		| x :: xs => $delay x :: stream_take (stream_tail (xs), n-1)
  
-implement {a} stream_get (xs, n) = case+ !xs of 
-	| Nil () => Nothing ()
-	| Cons (_, _) =>
+implement {a} stream_get (xs, n) = 
+	case+ !xs of 
+	| Nil ()  => Nothing ()
+	| x :: xs =>
 		if n = 0 
-		then stream_head (xs)
-		else stream_get (stream_tail (xs), n-1)
+		then Just x
+		else stream_get (xs, n-1)
  
 implement {a,b} {r} stream_zip (xs, ys, f) = 
-	case+ stream_head (xs) of 
-	| Nothing () => $delay Nil ()
-	| Just (x) =>
-		case+ stream_head (ys) of 
-		| Nothing () => $delay Nil ()
-		| Just (y) => $delay (f (x, y) :: stream_zip (stream_tail (xs), stream_tail (ys), f))
+	case+ !xs of 
+	| Nil ()  => $delay Nil ()
+	| x :: xs =>
+		case+ !ys of 
+		| Nil ()  => $delay Nil ()
+		| y :: ys => $delay f (x, y) :: stream_zip (xs, ys, f)
  
 implement {a} stream_filter (xs, f) = 
-	case+ stream_head xs of 
-	| Nothing () => $delay Nil ()
-	| Just (x) =>
-		if f (x) 
-		then $delay (x :: stream_filter (stream_tail (xs), f))
-		else stream_filter (stream_tail (xs), f)
+	case+ !xs of 
+	| Nil _   => $delay Nil ()
+	| x :: xs =>
+		if f x 
+		then $delay x :: stream_filter (xs, f)
+		else stream_filter (xs, f)
  
-implement {a} fprint_stream (out, xs, len, f) = case+ !xs of 
+(*implement {a} fprint_stream (out, xs, len, f) = case+ !xs of 
 	| Nil () => fprint (out, "nil")
 	| Cons (x, xs) => 
 		if len > 0 
@@ -73,41 +78,58 @@ implement {a} fprint_stream (out, xs, len, f) = case+ !xs of
 			val _ = fprint (out, ":")
 			val _ = fprint (out, xs, len-1, f)
 		}
+*)
 
-implement {a} {b} stream_map (xs, f) = case+ !xs of 
-	| Nil () => $delay Nil () 
-	| Cons (x, xs) => $delay (f(x) :: stream_map (xs, f))
+implement {a} {b} stream_map (xs, f) = 
+	case+ !xs of 
+	| Nil ()  => $delay Nil () 
+	| x :: xs => $delay f(x) :: stream_map (xs, f)
 
 implement {a} {b} stream_foldr (xs, base, f) = 
 	case+ !xs of 
 	| Cons (x, xs) => f(x, stream_foldr (xs, base, f))
-	| Nil () => base 
+	| Nil ()       => base 
 
 implement {a} {b} stream_foldl (xs, base, f) = 
 	case+ !xs of 
 	| Cons (x, xs) => stream_foldl (xs, f (x, base), f)
-	| Nil () => base 
+	| Nil ()       => base 
 
-implement {a} stream_empty (xs) = 
+implement stream_empty {a} (xs) = 
 	case+ !xs of 
 	| Nil () => true
-	| _ => false
+	| _      => false
 
-implement {a} stream_append (xs, x) = $delay Cons (x, xs)
+//implement {a} stream_append (xs, x) = $delay Cons (x, xs)
 
-implement {a} stream_concat (xs, ys) =
+//implement {a} stream_concat (xs, ys) =
+//	case+ !xs of 
+//	| Nil () => ys
+//	| x :: xs => stream_concat (xs, $delay x :: ys)
+
+implement {a} stream_to_list (xs) = 
 	case+ !xs of 
-	| Nil () => ys
-	| Cons (x, xs) => stream_concat (xs, $delay Cons (x, ys))
+	| x :: xs => $LIST.Cons (x, stream_to_list xs)
+	| Nil _ => $LIST.Nil ()
 
 implement {a,b} {r} stream_zip (xs, ys, f) =
-	if stream_empty xs || stream_empty ys 
-	then $delay Nil ()
-	else $delay Cons (
-		f (maybe_unjust (stream_head xs), maybe_unjust (stream_head ys)), 
-		stream_zip (stream_tail xs, stream_tail ys, f))
+	case+ !xs of 
+	| Nil _ => $delay Nil ()
+	| x :: xs =>
+		case+ !ys of 
+		| Nil _ => $delay Nil ()
+		| y :: ys => $delay f (x, y) :: stream_zip (xs, ys, f)
 
 implement {a} stream_foreach (xs, f) =
 	case+ !xs of 
 	| Nil () => ()
-	| Cons (x, xs) => stream_foreach (xs, f) where { val _ = f x }
+	| x :: xs => stream_foreach (xs, f) where { val _ = f x }
+
+implement stream_print_int (s, len) = 
+	$LIST.show (stream_to_list (stream_take (s, len)))
+
+implement stream_print_char (s, len) = 
+	$LIST.show (stream_to_list (stream_take (s, len)))
+
+implement {a} stream_print (s, len, f) = 
+	$LIST.show (stream_to_list (stream_take (s, len)), f)

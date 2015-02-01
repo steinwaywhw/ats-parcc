@@ -23,10 +23,15 @@ fun string_eq (string, string): bool
 fun string_get (string, int): char = "mac#"
 fun string_len (string): int 
 
+
 overload [] with string_get
 overload len with string_len
 overload compare with string_compare
-//overload eq with string_eq
+overload append with string_append 
+overload prepend with string_prepend
+overload concat with string_concat 
+overload eq with string_eq
+
 //overload = with string_eq
 
 

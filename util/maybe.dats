@@ -3,7 +3,7 @@ staload "util/maybe.sats"
 implement {a,b} maybe_bind (m, f) = 
 	case+ m of 
 	| Nothing _ => Nothing ()
-	| Just (x)  => f x
+	| Just (x)  => Just (f x)
 
 ////
 implement maybe_is_nothing {a} (m) = 
