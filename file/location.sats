@@ -1,5 +1,7 @@
+staload "util/util.sats"
+
 abstype position = ptr
-abstype range = ptr
+abstype range    = ptr
 abstype location = ptr
 
 fun Pos (row: int, col: int): position 
@@ -24,12 +26,19 @@ fun location_range (location): range
 	Utilities
  ***************)
 
-fun fprint_location (out: FILEref, loc: location): void
-fun fprint_position (out: FILEref, pos: position): void
-fun fprint_range (out: FILEref, r: range): void
-overload fprint with fprint_range
-overload fprint with fprint_location
-overload fprint with fprint_position 
+//fun fprint_location (loc: location, out: FILEref): void
+//fun fprint_position (pos: position, out: FILEref): void
+//fun fprint_range (r: range, out: FILEref): void
+fun print_location (location): void 
+fun print_position (position): void 
+fun print_range (range): void 
+
+//overload show with fprint_range
+//overload show with fprint_location
+//overload show with fprint_position
+overload show with print_range
+overload show with print_location
+overload show with print_position
 
 fun eq_pos_pos (position, position): bool
 fun eq_range_range (range, range): bool
@@ -46,8 +55,6 @@ fun lte_pos_pos (position, position): bool
 
 fun compare_pos_pos (position, position): int
 
-overload compare with compare_pos_pos
-
 overload = with eq_pos_pos
 overload = with eq_range_range
 overload = with eq_loc_loc
@@ -60,3 +67,5 @@ overload > with gt_pos_pos
 overload < with lt_pos_pos
 overload >= with gte_pos_pos
 overload <= with lte_pos_pos
+
+overload compare with compare_pos_pos

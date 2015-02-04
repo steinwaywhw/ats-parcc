@@ -1,5 +1,6 @@
 staload "util/util.sats"
 staload "util/pair.sats"
+#define ATS_DYNLOADFLAG 0
 
 (*implement {a,b} fprint_pair (out, p) = () where {
 	val _ = fprint (out, "Pair (")

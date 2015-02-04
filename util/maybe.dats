@@ -1,4 +1,5 @@
 staload "util/maybe.sats"
+#define ATS_DYNLOADFLAG 0
 
 implement {a,b} maybe_bind (m, f) = 
 	case+ m of 

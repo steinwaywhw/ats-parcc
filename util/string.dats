@@ -1,7 +1,8 @@
+#define ATS_DYNLOADFLAG 0
 #include "share/atspre_staload.hats"
+
 staload "libc/SATS/math.sats"
 staload _ = "libc/DATS/math.dats"
-
 staload UN = "prelude/SATS/unsafe.sats"
 
 staload "util/util.sats"
@@ -43,7 +44,7 @@ in
 	list_reverse (loop (0, Nil ()))
 end
 
-
+implement string_empty (s) = s = ""
 
 implement string_from_char (c) = string_unexplode (c :: Nil())
 
@@ -140,6 +141,7 @@ int string_find (char *str, char *sep) {
 
 %}
 
+////
 
 dynload "util/list.dats"
 

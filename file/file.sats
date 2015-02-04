@@ -1,12 +1,11 @@
+staload "util/util.sats"
+staload "util/stream.sats"
+staload "util/pair.sats"
 staload "file/location.sats"
 
-staload sm = "util/stream.sats"
-staload "util/pair.sats"
-
-typedef fs_char_t = lazy ($sm.stream char) 
-typedef fs_pos_t = lazy ($sm.stream (pair (char, position)))
-typedef fs_loc_t = lazy ($sm.stream (pair (char, location)))
-
+typedef fs_char_t = lazy (stream char) 
+typedef fs_pos_t = lazy (stream (pair (char, position)))
+typedef fs_loc_t = lazy (stream (pair (char, location)))
 
 // public interface
 fun file_get_stream (path: string): fs_char_t

@@ -2,9 +2,9 @@ staload "util/util.sats"
 staload "file/location.sats"
 staload "util/list.sats"
 
-abstype token = ptr
+//abstype token = ptr
 
-datatype tokennode = 
+datatype token = 
 	| TComment 	of string
 	| TSpace 	of ()
 	| TChar 	of char
@@ -12,6 +12,15 @@ datatype tokennode =
 	| TId 		of string
 	| TInt 		of int
 
+
+fun print_token (token): void 
+fun fprint_token (token, FILEref): void
+
+overload show with print_token 
+overload show with fprint_token 
+
+
+////
 fun token_get_file (token): string
 fun token_get_range (token): range
 fun token_get_location (token): location

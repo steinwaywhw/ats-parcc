@@ -1,3 +1,3 @@
 staload "sds.sats"
 
-#define ATSDYNLOADFLAG 0
+#define ATS_DYNLOADFLAG 0

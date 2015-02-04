@@ -1,4 +1,5 @@
 #include "share/atspre_staload.hats"
+#define ATS_DYNLOADFLAG 0
 
 staload "util/util.sats"
 staload "util/list.sats"
@@ -6,6 +7,8 @@ staload "util/maybe.sats"
 
 
 #define :: Cons
+
+
 
 
 implement list_empty {a} (xs) = 
@@ -92,6 +95,7 @@ implement {a} list_reverse (xs) =
 	| x :: xs => list_append (list_reverse (xs), x)
 	| Nil ()  => Nil ()
 
+
 implement {a} list_print (xs, f) = 
 	case+ xs of 
 	| Nil _      => show "nil"
@@ -109,7 +113,7 @@ implement list_print_string (xs) = list_print<string> (xs, lam x => print_string
 	
 
 
-
+////
 
 staload _ = "util/maybe.dats"
 dynload "util/maybe.dats"

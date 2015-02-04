@@ -1,19 +1,108 @@
 #include "share/atspre_staload.hats"
+#define ATS_DYNLOADFLAG 0
 
-staload "lexing/lexcc.sats"
-staload sm = "util/stream.sats"
 staload "util/util.sats"
-staload "util/pair.sats"
+staload "util/string.sats"
 staload "util/list.sats"
-staload "string/string.sats"
-staload "file/location.sats"
-staload "parcc.sats"
+staload sm = "util/stream.sats"
+staload "util/pair.sats"
+staload "util/unit.sats"
 
+staload "parcc.sats"
+staload "lexing/lexcc.sats"
+
+staload _ = "parcc.dats"
 staload _ = "util/list.dats"
 staload _ = "util/pair.dats"
-staload _ = "parcc.dats"
 
-implement lit_char (match) = sat (anychar (), lam x => fst x = match)
+//staload "file/location.sats"
+
+#define :: Cons 
+
+implement anychar () =
+	lam input => 
+		case+ !input of
+		| $sm.Nil () => Failure (input)
+		| $sm.Cons (x, rest) => Success (x, rest)
+
+implement lit_char (match) = sat (anychar (), lam x => x = match)
+
+implement lit_string (match) = let 
+	fun genpar (index: int):<cloref1> lexer unit =
+		if index = len (match) - 1
+		then skip (lit_char match[index])
+		else skip (seq (skip (lit_char match[index]), genpar (index+1)))
+in 
+	red (genpar (0), lam _ => match)
+end
+
+
+implement charin (charset) = sat (anychar (), lam x => string_find (charset, string_from_char x) >= 0)
+implement charnotin (charset) = sat (anychar (), lam x => string_find (charset, string_from_char x) < 0)
+
+implement digit () = red (sat (anychar (), lam x => isdigit x), lam x => x - '0')
+implement xdigit () = 
+	red (
+		sat (anychar (), lam x => isxdigit x), 
+		lam x => if isdigit x then x - '0' else tolower x - 'a' + 10
+		)
+
+
+implement alpha () = sat (anychar (), lam x => isalpha x)
+implement spacetab () = sat (anychar (), lam x => isblank x)
+implement printable () = sat (anychar (), lam x => isprint x)
+implement newline () = lit_char '\n'
+implement whitespace () = sat (anychar (), lam x => isspace x)
+
+implement escape () = let 
+	val case1 = 
+		red (
+			seq (literal '\\', charin ("abfnrtv\\\'\"\?")), 
+			lam x => 
+				case+ snd x of
+				| 'a' => '\a'
+				| 'b' => '\b'
+				| 'f' => '\f'
+				| 'n' => '\n'
+				| 'r' => '\r'
+				| 't' => '\t'
+				| 'v' => '\v'
+				| ch  => ch
+			)
+	
+	val case2 =  
+		red (
+			seq (literal '\\', rptn (digit (), 3)), 
+			lam x => 
+				case- snd x of 
+				| x :: y :: z :: Nil () => int2char0 (x * 64 + y * 8 + z)
+			)
+
+	val case3 = 
+		red (
+			seq (literal "\\x", rptn (xdigit (), 2)),
+			lam x => 
+				case- snd x of 
+				| x :: y :: Nil () => int2char0 (x * 16 + y)
+			)
+
+in 
+	alt (case1, alt (case2, case3)) 
+end
+
+
+
+staload _ = "util/stream.dats"
+
+implement main0 () = () where {
+	val sep = "\n==========================\n"
+	val _ = show (apply (literal 'c', $sm.stream_from_string "cdefg"))
+	val _ = show sep 
+}
+
+
+////
+implement lit_char (match) = sat (anychar (), lam x => x = match)
 		
 implement lit_string (match) = let 
 	fun genpar (index: int):<cloref1> parser (charloc_stream, location) =
@@ -31,13 +120,10 @@ in
 	red (genpar (0), lam (x) => Pair (match, x))
 end
 
-implement charin (charset) = sat (anychar (), lam x => string_find (charset, fst x) >= 0)
+implement charin (charset) = 
+	sat (anychar (), lam x => string_find (charset, fst x) >= 0)
 
-implement anychar () =
-	lam input => 
-		case+ !input of
-		| $sm.Nil () => Failure (input)
-		| $sm.Cons (x, rest) => Success (x, rest)
+
 
 implement digit () = 
 	red (

@@ -1,24 +1,28 @@
 #include "share/atspre_staload.hats"
+#define ATS_DYNLOADFLAG 0
+
 staload "file/location.sats"
+staload "util/util.sats"
 
 assume position = '{line=int, col=int}
-assume range = '{a=position, b=position}
+assume range    = '{a=position, b=position}
 assume location = '{file=string, r=range}
 
-implement Pos (line, col) = '{line = line, col = col}
+implement Pos (line, col)   = '{line = line, col = col}
+
 implement position_line (p) = p.line
-implement position_col (p) = p.col
+implement position_col (p)  = p.col
 implement position_next (current, ch) = 
 	if ch = '\n'
 	then '{line = current.line + 1, col = 1}
 	else '{line = current.line, col = current.col + 1}
 
 implement position_origin = '{line = 1, col = 1}
-implement position_eof = '{line = ~1, col = ~1}
+implement position_eof    = '{line = ~1, col = ~1}
 
-implement Range (a, b) = '{a=a, b=b} 
+implement Range (a, b)        = '{a=a, b=b} 
 implement range_begin (range) = range.a
-implement range_end (range) = range.b
+implement range_end (range)   = range.b
 
 local 
 	fun min (x:position, y:position): position = if x < y then x else y
@@ -27,30 +31,50 @@ in
 	implement range_merge (x, y) = '{a=min(x.a, y.a), b=max(x.b, y.b)}
 end
 
-implement Loc (file, r) = '{file=file, r=r} 
-implement location_file (loc) = loc.file
+implement Loc (file, r)        = '{file=file, r=r} 
+implement location_file (loc)  = loc.file
 implement location_range (loc) = loc.r
 
 (***************
 	Utilities
  ***************)
 
-implement fprint_location (out, loc) = () where {
-	val _ = fprint (out, loc.file)
-	val _ = fprint (out, " [")
-	val _ = fprint (out, loc.r)
-	val _ = fprint (out, "]")
+//implement fprint_location (loc, out) = () where {
+//	val _ = fprint (out, loc.file)
+//	val _ = fprint (out, " [")
+//	val _ = fprint (out, loc.r)
+//	val _ = fprint (out, "]")
+//}
+
+//implement fprint_position (pos, out) = $extfcall (void, "fprintf", out, "%d:%d", pos.line, pos.col)
+
+//implement fprint_range (r, out) = () where {
+//	val _ = fprint (out, r.a)
+//	val _ = fprint (out, " - ")
+//	val _ = fprint (out, r.b)
+//}
+
+implement print_location (loc) = () where {
+	val _ = show (loc.file)
+	val _ = show " ["
+	val _ = print_range loc.r
+	val _ = show "]"
 }
 
-implement fprint_position (out, pos) = $extfcall (void, "fprintf", out, "%d:%d", pos.line, pos.col)
-
-implement fprint_range (out, r) = () where {
-	val _ = fprint (out, r.a)
-	val _ = fprint (out, " - ")
-	val _ = fprint (out, r.b)
+implement print_position (p) = () where {
+	val _ = show p.line 
+	val _ = show ":"
+	val _ = show p.col
 }
 
-implement eq_pos_pos (a, b)			 = compare (a, b) = 0	
+implement print_range (r) = () where {
+	val _ = print_position r.a
+	val _ = show " - "
+	val _ = print_position r.b
+}
+
+
+implement eq_pos_pos (a, b)			 = compare_pos_pos (a, b) = 0	
 implement eq_range_range (a, b)		 = a.a = b.a && a.b = b.b	
 implement eq_loc_loc (a, b)			 = a.file = b.file && a.r = b.r
 
@@ -58,10 +82,10 @@ implement neq_pos_pos (a, b)		 = ~(a = b)
 implement neq_range_range (a, b)	 = ~(a = b)
 implement neq_loc_loc (a, b)		 = ~(a = b)
 
-implement gt_pos_pos (a, b)			 = compare (a, b) > 0	
-implement lt_pos_pos (a, b)			 = compare (a, b) < 0	
-implement gte_pos_pos (a, b)		 = compare (a, b) >= 0	
-implement lte_pos_pos (a, b)		 = compare (a, b) <= 0	
+implement gt_pos_pos (a, b)			 = compare_pos_pos (a, b) > 0	
+implement lt_pos_pos (a, b)			 = compare_pos_pos (a, b) < 0	
+implement gte_pos_pos (a, b)		 = compare_pos_pos (a, b) >= 0	
+implement lte_pos_pos (a, b)		 = compare_pos_pos (a, b) <= 0	
 
 implement compare_pos_pos (a, b)	 = if a.line = b.line then a.col - b.col else a.line - b.line	
 

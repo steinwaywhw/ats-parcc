@@ -5,7 +5,7 @@ fun string_unexplode (list char): string
 
 fun string_from_char (char): string
 fun string_from_int (int): string
-fun string_to_int (string): int 
+fun string_to_int (string): int
 fun string_to_double (string): double
 
 fun string_find (string, string): int = "mac#"
@@ -23,8 +23,10 @@ fun string_eq (string, string): bool
 fun string_get (string, int): char = "mac#"
 fun string_len (string): int 
 
+fun string_empty (string): bool
 
 overload [] with string_get
+overload empty with string_empty
 overload len with string_len
 overload compare with string_compare
 overload append with string_append 

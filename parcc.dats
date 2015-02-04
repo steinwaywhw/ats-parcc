@@ -1,21 +1,35 @@
 #include "share/atspre_staload.hats"
+#define ATS_DYNLOADFLAG 0
 
 staload "parcc.sats"
+staload "util/util.sats"
 staload "util/pair.sats"
-staload "util/maybe.sats"
-staload "lexing/token.sats"
-staload sm = "util/stream.sats"
 staload "util/list.sats"
-staload "string/string.sats"
-staload "file/location.sats"
 staload "util/unit.sats"
+staload "util/maybe.sats"
 
-staload _ = "util/stream.dats"
-staload _ = "file/location.dats"
 staload _ = "util/list.dats"
 staload _ = "util/pair.dats"
 
+//staload "util/string.sats"
+//staload "lexing/token.sats"
+//staload sm = "util/stream.sats"
+//staload "file/location.sats"
+//staload _ = "util/stream.dats"
+//staload _ = "file/location.dats"
+
+
 #define :: Cons
+
+
+implement {i} {o} print_result (r, f) =
+	case+ r of 
+	| Success (o, _) => f o 
+	| Failure _      => show "fail"
+
+implement {i} print_result_int (r)    = print_result (r, print_int)
+implement {i} print_result_string (r) = print_result (r, print_string)
+implement {i} print_result_char (r)   = print_result (r, print_char)
 
 //
 // pargen
@@ -60,13 +74,15 @@ implement {i} {o} opt (p) =
 
 implement {i} {o} rpt1 (p) = red (seq (p, rpt0 p), lam x => fst x :: snd x)
 
-implement {i} {o} rpt0 (p) = 
+implement {i} {o} rpt0 (p) =
 	lam (input) =>
 		case+ apply (p, input) of 
 		| Failure (input) => Success (Nil (), input)
-		| Success (ret, rest) => Success (ret :: xs, rest) where {
-			val Success (xs, rest) = apply (rpt0 p, rest)
-		} 
+		| Success (ret, rest) => 
+			case+ apply (rpt0 p, rest) of 
+			| Success (xs, rest) => Success (ret :: xs, rest)
+			| Failure (rest) => Success (ret :: Nil (), rest)
+
 
 implement {i} {o} rptn (p, n) = 
 	if n <= 0
@@ -81,7 +97,7 @@ implement {i} {o1,o2} bind (p, f) =
 	lam (input) => 
 		case+ apply (p, input) of 
 			| Success (ret, input) => apply (f (ret), input)
-			| Failure (input) => Failure (input)
+			| Failure (input)      => Failure (input)
 
 
 implement {i, o} {r} red (p, f) = bind (p, lam x => succeed (f x))

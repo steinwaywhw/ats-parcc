@@ -1,4 +1,5 @@
 staload "util/maybe.sats"
+#define ATS_DYNLOADFLAG 0
 
 abstype map (k:t@ype, v:t@ype)
 typedef map (k:t@ype) = [v:t@ype] map (k, v)

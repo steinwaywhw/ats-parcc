@@ -7,6 +7,7 @@ datatype list (a:t@ype) =
 
 fun list_empty   {a:t@ype} (list a): bool
 
+//fun {a:t@ype} list_get 	   (list a): a
 fun {a:t@ype} list_len     (list a): int
 fun {a:t@ype} list_append  (list a, a): list a
 fun {a:t@ype} list_prepend (list a, a): list a
@@ -32,6 +33,7 @@ fun list_print_int 		(list int): void
 fun list_print_char 	(list char): void 
 fun list_print_string 	(list string): void
 
+//overload [] 	 with list_get 
 overload len 	 with list_len
 overload empty 	 with list_empty 
 overload append  with list_append

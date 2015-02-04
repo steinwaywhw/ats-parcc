@@ -29,10 +29,11 @@ dynload "dynload.dats"
 extern fun test (path: string): void
 
 implement test (path) = () where {
-	val sm = file_append_location (file_append_position (file_get_stream path, Pos (1, 1)), path)
+//	val sm = file_append_location (file_append_position (file_get_stream path, Pos (1, 1)), path)
 
+	val sm = file_get_stream path
 
-	val id = red (alpha()^*, lam (x) -> 
+	val id = red (alpha()^*, lam (x) => string_unexplode x)
 	val ws = skip whitespace()^*
 	val key = literal "lam"
 	val operator = literal "=" <|> literal "=>" <|> literal "++"

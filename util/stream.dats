@@ -1,10 +1,17 @@
+#include "share/atspre_staload.hats"
+#define ATS_DYNLOADFLAG 0
+
 staload "util/util.sats"
 staload "util/stream.sats"
 staload "util/maybe.sats"
 staload LIST = "util/list.sats"
 staload _ = "util/list.dats"
+staload "util/string.sats"
 
 #define :: Cons
+
+
+
 
 implement {a} stream_interleave (xs, ys) =
 	case+ !xs of
@@ -133,3 +140,8 @@ implement stream_print_char (s, len) =
 
 implement {a} stream_print (s, len, f) = 
 	$LIST.show (stream_to_list (stream_take (s, len)), f)
+
+implement stream_from_string (s) = 
+	if empty s
+	then $delay Nil ()
+	else $delay s[0] :: stream_from_string (string_range (s, 1, len (s) - 1))
