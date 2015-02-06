@@ -6,7 +6,7 @@ SRC := util/*.dats lexing/*.dats file/*.dats parcc.dats #dynload.dats
 DEL := *_dats.c *_sats.c *.out main
 
 all:
-	patscc $(SRC) -DATS_MEMALLOC_LIBC -o main -latslib -lm
+	patscc $(SRC) -g -DATS_MEMALLOC_LIBC -o main -latslib -lm
 
 clean:
 	rm -f $(DEL)

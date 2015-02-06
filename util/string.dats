@@ -57,32 +57,43 @@ in
 	if n > 0 then loop (n, "") else string_prepend (loop (~n, ""), '-')
 end
 
-implement string_to_int (s) = 
-	if s[0] = '-' 
-	then ~ (string_to_int (string_range (s, 1, string_len(s)-1)))
-	else let 
-		val len = string_len s
-		fun loop (index: int, r: int): int = 
-			if index < len 
-			then loop (index + 1, (s[index] - '0') + 10 * r)
-			else r 
-	in 
-		loop (0, 0)
-	end
+implement string_to_int_unsigned (s) = let 
+	fun loop (s: string, r: int): int = 
+		if empty s 
+		then r 
+		else loop (tail s, (head(s) - '0') + 10 * r)
+in 
+	loop (string_trim s, 0)
+end
 
-implement string_to_double (s) = 
-	if s[0] = '-' 
-	then ~ string_to_double (string_range (s, 1, string_len (s) - 1))
-	else let 
-		val pos = string_find (s, ".")
-		val a = string_range (s, 0, pos-1)
-		val b = string_range (s, pos+1, string_len (s) - 1)
-		val aint = string_to_int a 
-		val bint = string_to_int b 
-	in 
-		(* need to link with option -lm *)
-		aint * 1.0 + bint * 1.0 * pow (10.0, ~ string_len (b) * 1.0)
-	end
+implement string_to_int (s) = let 
+	val sign = head (string_trim s) 
+in 
+	case+ sign of 
+	| _ when sign = '-' => ~ (string_to_int_unsigned (tail (string_trim s)))
+	| _ when sign = '+' => string_to_int_unsigned (tail (string_trim s))
+	| _ 				=> string_to_int_unsigned (s)
+end
+
+implement string_to_double_unsigned (s) = let 
+	val s = string_trim s 
+	val pos = string_find (s, ".")
+	val a = string_range (s, 0, pos-1)
+	val b = string_range (s, pos+1, len (s)-1)
+	val aint = string_to_int_unsigned a
+	val bint = string_to_int_unsigned b
+in 
+	aint*1.0 + bint*1.0*pow(10.0, ~(len(b)*1.0))
+end
+
+implement string_to_double (s) = let 
+	val sign = head (string_trim s)
+in 
+	case+ sign of 
+	| _ when sign = '-' => ~ (string_to_double_unsigned (tail (string_trim s)))
+	| _ when sign = '+' => string_to_double_unsigned (tail (string_trim s))
+	| _ 				=> string_to_double_unsigned (s)
+end
 
 implement string_join (xs, sep) = 
 	case+ xs of 
@@ -113,15 +124,35 @@ implement string_prepend (s, c) = string_concat (string_from_char (c), s)
 implement string_range (s, b, e) = 
 	if b <= e 
 	then string_unexplode (list_take (list_drop (string_explode s, b), e - b + 1))
-	else string_range (s, e, b)
+	else ""
 
 implement string_compare (a, b) = $extfcall (int, "strcmp", a, b)
 implement string_eq (a, b) = string_compare (a, b) = 0
 implement string_len (str) = $extfcall (int, "strlen", str)
 
+implement string_head (str) = if empty str then '\0' else str[0]
+implement string_tail (str) = if empty str then "" else string_range (str, 1, string_len (str) - 1)
 
+implement string_trim (str) = let 
+	fun loop1 (str: string): string = 
+		if empty str
+		then str 
+		else 
+			if isspace (head str) 
+			then string_trim (tail str) 
+			else str 
+	fun loop2 (str: string): string = 
+		if empty str 
+		then str 
+		else 
+			if isspace (str[len (str) - 1])
+			then string_trim (string_range (str, 0, len (str) - 2))
+			else str 
+in 
+	loop2 (loop1 str)
+end 
 
-%{#
+%{
 
 int string_get (char *str, int pos) {
 	if (pos < strlen(str)) {
@@ -141,9 +172,8 @@ int string_find (char *str, char *sep) {
 
 %}
 
-////
 
-dynload "util/list.dats"
+
 
 implement main0 () = () where {
 	val sep = "\n----------------\n" : string
@@ -151,9 +181,9 @@ implement main0 () = () where {
 	val _ = show sep
 	val _ = show (string_from_int(~12345222))
 	val _ = show sep
-	val _ = show (string_to_int("-1234562222"))
+	val _ = show (string_to_int(" -1234562222 "))
 	val _ = show sep 
-	val _ = show (string_to_double("-123.456") = ~123.456)
+	val _ = show (string_to_double("  -123.456 \n") = ~123.456)
 	val _ = show sep
 	val _ = show (string_explode "Abcdefg")
 	val _ = show sep

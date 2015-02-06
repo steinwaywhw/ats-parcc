@@ -1,6 +1,7 @@
 
 datatype pair (a:t@ype, b:t@ype) = Pair of (a, b)
 
+
 //fun {a,b:t@ype} fprint_pair (FILEref, pair (a, b)): void
 //overload fprint with fprint_pair
 

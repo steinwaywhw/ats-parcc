@@ -27,9 +27,11 @@ implement {i} {o} print_result (r, f) =
 	| Success (o, _) => f o 
 	| Failure _      => show "fail"
 
-implement {i} print_result_int (r)    = print_result (r, print_int)
-implement {i} print_result_string (r) = print_result (r, print_string)
-implement {i} print_result_char (r)   = print_result (r, print_char)
+implement {i} print_result_int (r)    = print_result (r, lam x => show x)
+implement {i} print_result_string (r) = print_result (r, lam x => show x)
+implement {i} print_result_char (r)   = print_result (r, lam x => show x)
+implement {i} print_result_double (r) = print_result (r, lam x => show x)
+implement {i} print_result_bool (r)   = print_result (r, lam x => show x)
 
 //
 // pargen

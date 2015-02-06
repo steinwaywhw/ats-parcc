@@ -6,24 +6,50 @@ staload "lexing/token.sats"
 
 typedef lexer (o:t@ype) = parser (lazy ($sm.stream char), o)
 
-fun lit_char (char)     : lexer char
-fun lit_string (string) : lexer string
+fun lit_char (char)        : lexer char
+fun lit_string (string)    : lexer string
 
-fun anychar ()          : lexer char	// any input
-fun charin (string)     : lexer char 	// char is in the set
-fun charnotin (string)  : lexer char	// char is not in the set
-fun digit ()            : lexer int 	// [0-9]
-fun xdigit ()           : lexer int 	// [0-9] + ABCDEF + abcdef
-fun alpha ()            : lexer char 	// [a-zA-Z]
-fun spacetab ()         : lexer char 	// space or tab
-fun newline ()          : lexer char 	// \n
-fun whitespace ()       : lexer char  	// space, \t\n\v\f\r
-fun printable ()        : lexer char 	// printable
-fun escape ()           : lexer char 	// c escape*)
+fun anychar ()             : lexer char // any input
+fun charin (string)        : lexer char // char is in the set
+fun charnotin (string)     : lexer char // char is not in the set
+fun digit ()               : lexer char // [0-9]
+fun xdigit ()              : lexer char // [0-9] + ABCDEF + abcdef
+fun alpha ()               : lexer char // [a-zA-Z]
+fun alphadigit ()          : lexer char // [a-zA-Z0-9]
+fun spacetab ()            : lexer char // space or tab
+fun newline ()             : lexer char // \n
+fun whitespace ()          : lexer char // space, \t\n\v\f\r
+fun printable ()           : lexer char // printable
+fun escape ()              : lexer char // c escape
 
+fun alphas ()              : lexer string
+fun digits ()              : lexer string
+fun xdigits ()             : lexer string
+fun alphadigits ()         : lexer string
+
+fun string_double_quote () : lexer string // "asdasdasd"
+fun string_backtip ()      : lexer string // `asdasasd`
+fun string_multiline ()    : lexer string // ``` asdf;lkasdf;lkj ```
+
+
+// all of these don't include prefix or suffix
+// these are purely numbers
+fun signed_int_dec ()      : lexer int 
+fun unsigned_int_dec ()    : lexer int 
+fun unsigned_int_hex ()    : lexer int 
+fun unsigned_int_bin ()    : lexer int 
+fun unsigned_int_oct ()    : lexer int 
+fun exponent ()            : lexer int     // [eE] signed int 
+fun unsigned_double_dec () : lexer double  // not including exponent
+fun signed_double_dec ()   : lexer double  // not including exponent
+
+fun boolean ()             : lexer bool 
+ 
 symintr literal 
 overload literal with lit_char 
 overload literal with lit_string 
+
+fun {o:t@ype} skipws (lexer o): lexer o 
 
 (*// These types are for internal use only
 // No public use is allowed

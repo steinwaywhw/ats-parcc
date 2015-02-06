@@ -46,13 +46,17 @@ fun {i:t@ype} {o:t@ype} 	print_result 		(result (i, o), o -> void): void
 fun {i:t@ype} 				print_result_char 	(result (i, char)): void 
 fun {i:t@ype}				print_result_string (result (i, string)): void 
 fun {i:t@ype} 				print_result_int 	(result (i, int)): void
+fun {i:t@ype} 			    print_result_double (result (i, double)): void 
+fun {i:t@ype} 				print_result_bool 	(result (i, bool)): void 
 
 overload show with print_result
 overload show with print_result_int
 overload show with print_result_string
 overload show with print_result_char
+overload show with print_result_bool
+overload show with print_result_double
 
-////
+
 infixl 20 <|>
 overload <|> with alt 
 
