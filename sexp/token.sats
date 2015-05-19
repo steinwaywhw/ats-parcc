@@ -4,44 +4,40 @@ staload "util/list.sats"
 
 //abstype token = ptr
 
-
-
-
-   
-
-
 datatype token = 
 //main
-    | TComment  of string
-    | TSpace    of ()
-    | TId       of string
-
-//misc
-    | TLParen   of () // (
-    | TRParen   of () // )
-    | TLCurly   of () // {
-    | TRCurly   of () // }
-    | TLBrac    of () // [
-    | TRBrac    of () // ]
-    | TPAny     of () // _
-    | TColon    of () // :
-
-//keyword
-    | TLambda   of ()
-    | TCase     of ()
-    | TIf       of ()
-    | TLet      of () 
-    | TVal      of ()
-
-//literal
-    | TString   of string 
-    | TChar     of char 
-    | TInt      of int 
-    | TDouble   of double
-    | TBool     of bool 
-
-//operator
-    | TOp       of string
+    | TSpace      of ()
+    | TComment    of string
+    | TId         of string
+  
+//misc  
+    | TLParen     of () // (
+    | TRParen     of () // )
+    | TLCurly     of () // {
+    | TRCurly     of () // }
+    | TLBrac      of () // [
+    | TRBrac      of () // ]
+    | TUnderscore of () // _
+    | TColon      of () // :
+    | TSemiColon  of () // ;
+    | TComma      of () // ,
+ 
+//keyword 
+    | TLambda     of ()
+    | TCase       of ()
+    | TIf         of ()
+    | TLet        of () 
+    | TVal        of ()
+  
+//literal  
+    | TString     of string 
+    | TChar       of char 
+    | TInt        of int 
+    | TDouble     of double
+    | TBool       of bool 
+  
+//operator  
+    | TSym        of string
 
 fun print_token (token): void 
 fun fprint_token (token, FILEref): void
@@ -84,10 +80,15 @@ overload show with fprint_token
                          | (let (pattern expr)+ expr)
 
   value                  = string
-                         | numeral
-                         | [value*]
-                         | [(value:value)*]
+                         | int
+                         | bool
+                         | double
                          | ()
+                         | (list value+)        // list
+                         | (map (value value)+) // map
+                         | (value value+)       // tuple
+                         | (value)
+
 
                          | (begin expr ...+)
                          | (begin0 expr expr ...)
@@ -104,7 +105,13 @@ overload show with fprint_token
                          | (#%variable-reference)
 
   pattern                = id
-                         | (pattern* )
+                         | value
+                         | (list pattern+)
+                         | (map (pattern pattern)+)
+                         | (tuple pattern pattern+)
+                         | ()
+                         | (pattern)
+                         | void
                          | _
 
   formals                = (id ...)

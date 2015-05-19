@@ -1,5 +1,5 @@
-staload "util/maybe.sats"
-staload LIST = "util/list.sats"
+staload "./util.sats"
+staload "./maybe.sats"
 
 datatype stream (a:t@ype) =
 	| Cons of (a, lazy (stream a))
@@ -23,16 +23,15 @@ fun {a:t@ype} {b:t@ype} stream_foldl (lazy (stream a), b, (a, b) -<cloref1> b): 
 fun {a:t@ype} stream_interleave (lazy (stream a), lazy (stream a)): lazy (stream a)
 fun {a:t@ype} stream_merge (lazy (stream a), lazy (stream a), (a, a) -<cloref1> int): lazy (stream a)
 fun {a:t@ype} stream_get (lazy (stream a), int): maybe a
-fun {a:t@ype} stream_to_list (lazy (stream a)): $LIST.list a
 
 
-fun stream_print_int (lazy (stream int), int): void 
-fun stream_print_char (lazy (stream char), int): void 
-fun {a:t@ype} stream_print (lazy (stream a), int, a -> void): void
+fun stream_show_int (lazy (stream int), int): void 
+fun stream_show_char (lazy (stream char), int): void 
+fun {a:t@ype} stream_show (lazy (stream a), int, a -> void): void
 
-overload show with stream_print_int 
-overload show with stream_print_char 
-overload show with stream_print
+overload show with stream_show_int 
+overload show with stream_show_char 
+overload show with stream_show
 
 overload empty 	 with stream_empty	     
 overload head 	 with stream_head	     
@@ -47,13 +46,10 @@ overload zip 	 with stream_zip
 overload foreach with stream_foreach	      	
 overload [] 	 with stream_get
 
-fun stream_from_string (string): lazy (stream char)
 
 
 ////
 //fun {a:t@ype} stream_append (lazy (stream a), a): lazy (stream a)
 //fun {a:t@ype} stream_concat (lazy (stream a), lazy (stream a)): lazy (stream a)
-//fun {a:t@ype} fprint_stream (out: FILEref, s: lazy (stream a), len: int, f: (FILEref, a) -> void): void
-//overload fprint with fprint_stream
 //overload append	 with stream_append      	
 //overload concat	 with stream_concat      	

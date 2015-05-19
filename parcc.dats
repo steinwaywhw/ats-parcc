@@ -1,5 +1,6 @@
-#include "share/atspre_staload.hats"
 #define ATS_DYNLOADFLAG 0
+
+#include "share/atspre_staload.hats"
 
 staload "parcc.sats"
 staload "util/util.sats"
@@ -42,8 +43,6 @@ implement {i} {o} succeed (ret) =
 implement {i} {o} fail () = 
 	lam input => Failure (input)
 
-
-
 //
 // parcom
 //
@@ -52,12 +51,27 @@ implement {i} {o} alt (a, b) =
 		case+ apply (a, input) of 
 		| Success (ret, input) => Success (ret, input)
 		| Failure _ => apply (b, input)
-		
+
+implement {i} {o} alts (ps) = 
+	lam input =>
+		case+ ps of 
+		| Nil () => Failure (input)
+		| p :: Nil () => apply (p, input)
+		| p :: ps => 
+			case+ apply (p, input) of 
+			| Success (ret, input) => Success (ret, input)
+			| Failure _ => apply (alts ps, input)
 
 implement {i} {o1,o2} seq (a, b) = 
 	bind (a, 
 		lam (x) => 
 			bind (b, lam (y) => succeed (Pair (x, y))))
+
+implement {i} {o} seqs (ps) = 
+	case+ ps of 
+	| Nil () => fail ()
+	| p :: Nil () => bind (p, lam x => succeed (x :: Nil))
+	| p :: ps => bind (p, lam x => bind (seqs ps, lam y => succeed (x :: y)))
 
 implement {i} {o} sat (p, f) = 
 	lam (input) => 
@@ -74,7 +88,10 @@ implement {i} {o} opt (p) =
 		| Success (ret, rest) => Success (Just (ret), rest)
 		| Failure (input) => Success (Nothing (), input)
 
-implement {i} {o} rpt1 (p) = red (seq (p, rpt0 p), lam x => fst x :: snd x)
+implement {i} {o} rpt1 (p) = 
+	red (
+		seq (p, rpt0 p), 
+		lam x => fst x :: snd x)
 
 implement {i} {o} rpt0 (p) =
 	lam (input) =>
@@ -101,9 +118,7 @@ implement {i} {o1,o2} bind (p, f) =
 			| Success (ret, input) => apply (f (ret), input)
 			| Failure (input)      => Failure (input)
 
-
 implement {i, o} {r} red (p, f) = bind (p, lam x => succeed (f x))
-
 
 implement {i} {o} skip (p) = bind (p, lam x => succeed (Unit ()))
 

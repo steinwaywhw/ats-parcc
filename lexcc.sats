@@ -1,6 +1,6 @@
 staload "parcc.sats"
 staload sm = "util/stream.sats"
-staload "lexing/token.sats"
+//staload "lexing/token.sats"
 //staload "file/location.sats"
 //staload "util/pair.sats"
 
@@ -21,16 +21,18 @@ fun newline ()             : lexer char // \n
 fun whitespace ()          : lexer char // space, \t\n\v\f\r
 fun printable ()           : lexer char // printable
 fun escape ()              : lexer char // c escape
+fun symbol () 			   : lexer char // !#$%&*+-/<=>?@\^.|~ (that is, not "'`()[]{},:;_)
 
 fun alphas ()              : lexer string
 fun digits ()              : lexer string
 fun xdigits ()             : lexer string
 fun alphadigits ()         : lexer string
+fun symbols () 			   : lexer string 
 
+fun char_single_quote ()   : lexer char
 fun string_double_quote () : lexer string // "asdasdasd"
 fun string_backtip ()      : lexer string // `asdasasd`
 fun string_multiline ()    : lexer string // ``` asdf;lkasdf;lkj ```
-
 
 // all of these don't include prefix or suffix
 // these are purely numbers

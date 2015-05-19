@@ -1,10 +1,22 @@
-staload "util/maybe.sats"
+staload "./util.sats"
+staload "./maybe.sats"
 #define ATS_DYNLOADFLAG 0
 
 implement {a,b} maybe_bind (m, f) = 
 	case+ m of 
 	| Nothing _ => Nothing ()
 	| Just (x)  => Just (f x)
+
+implement {a} maybe_show (m, f) = 
+	case+ m of 
+	| Nothing _ => show "Nothing"
+	| Just x 	=> () where {
+		val () = show "Just ("
+		val () = f x
+		val () = show ")"
+	}
+
+
 
 ////
 implement maybe_is_nothing {a} (m) = 

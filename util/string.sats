@@ -1,4 +1,5 @@
-staload "util/list.sats"
+staload "./util.sats"
+staload "./list.sats"
 
 fun string_explode (string): list (char)
 fun string_unexplode (list char): string 

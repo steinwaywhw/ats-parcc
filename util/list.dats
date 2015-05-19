@@ -1,15 +1,38 @@
 #include "share/atspre_staload.hats"
 #define ATS_DYNLOADFLAG 0
 
-staload "util/util.sats"
-staload "util/list.sats"
-staload "util/maybe.sats"
-
+staload "./util.sats"
+staload "./list.sats"
+staload "./maybe.sats"
 
 #define :: Cons
 
+implement {a} list_eq (xs, ys, f) = 
+	case+ (xs, ys) of 
+	| (x::xs, y::ys) => if f(x, y) then true else false 
+	| (Nil(), Nil()) => true 
+	| (_, _) => false
 
+implement {a} list_is_prefix (xs, pre, f) = 
+	case+ (xs, pre) of 
+	| (x::xs, p::pre) => if f(x,p) then list_is_prefix (xs, pre, f) else false
+	| (_, Nil ()) => true 
+	| (_, _) => false
 
+implement {a} list_find (xs, obj, cmp) = 
+	case+ xs of 
+	| Nil _ => Nothing ()
+	| x :: xs => 
+		if cmp (x, obj)
+		then Just 0
+		else maybe_bind (list_find (xs, obj, cmp), lam x => x + 1)
+
+implement {a} list_get (xs, index) = 
+	if (index < 0) 
+	then Nothing ()
+	else if (index = 0)
+	then list_head xs
+	else list_get (list_tail xs, index - 1)
 
 implement list_empty {a} (xs) = 
 	case+ xs of 
@@ -77,10 +100,24 @@ implement {a} list_filter (xs, f) =
 		then Cons (x, list_filter (xs, f))
 		else list_filter (xs, f)
 
+implement {a} list_filter_clo (xs, f) =
+	case+ xs of 
+	| Nil () => Nil ()
+	| Cons (x, xs) => 
+		if f x
+		then Cons (x, list_filter_clo (xs, f))
+		else list_filter_clo (xs, f)
+
 implement {a} list_foreach (xs, f) =
 	case+ xs of 
 	| Nil () => ()
 	| Cons (x, xs) => list_foreach (xs, f) where { val _ = f x }
+
+
+implement {a} list_foreach_clo (xs, f) =
+	case+ xs of 
+	| Nil () => ()
+	| Cons (x, xs) => list_foreach_clo (xs, f) where { val _ = f x }
 
 implement {a,b} {r} list_zip (xs, ys, f) = 
 	case+ list_head xs of
@@ -95,19 +132,18 @@ implement {a} list_reverse (xs) =
 	| x :: xs => list_append (list_reverse (xs), x)
 	| Nil ()  => Nil ()
 
-
-implement {a} list_print (xs, f) = 
+implement {a} list_show (xs, f) = 
 	case+ xs of 
 	| Nil _      => show "nil"
 	| x :: xs    => () where {
 		val _ = f x 
 		val _ = show ":"
-		val _ = list_print (xs, f)
+		val _ = list_show (xs, f)
 	}
 
-implement list_print_int (xs) = list_print<int> (xs, lam x => print_int x)
-implement list_print_char (xs) = list_print<char> (xs, lam x => print_char x)
-implement list_print_string (xs) = list_print<string> (xs, lam x => print_string x)
+implement list_show_int (xs) = list_show<int> (xs, lam x => show x)
+implement list_show_char (xs) = list_show<char> (xs, lam x => show x)
+implement list_show_string (xs) = list_show<string> (xs, lam x => show x)
 
 
 	
@@ -115,8 +151,7 @@ implement list_print_string (xs) = list_print<string> (xs, lam x => print_string
 
 ////
 
-staload _ = "util/maybe.dats"
-dynload "util/maybe.dats"
+staload _ = "maybe.dats"
 
 implement main0 () = () where {
 	val xs = 1 :: 2 :: Nil() : list int 
@@ -132,7 +167,7 @@ implement main0 () = () where {
 	val _ = show seprator
 	val _ = show (list_append (xs, 9))
 	val _ = show seprator
-	val _ = maybe_bind (list_head xs, lam x => 0 where { val _ = print_int x })
+	val _ = bind (list_head xs, lam x => 0 where { val _ = print_int x })
 	val _ = show seprator
 	val _ = show (list_tail xs)
 	val _ = show seprator
@@ -148,7 +183,7 @@ implement main0 () = () where {
 	val _ = show seprator
 	val _ = show (list_filter (xs, lam x => x != 2))
 	val _ = show seprator
-	val _ = list_foreach (xs, lam x => show (2 * x))
+	val _ = foreach (xs, lam x => show (2 * x))
 	val _ = show seprator
 	val _ = show (list_reverse (xs))
 	val _ = show seprator

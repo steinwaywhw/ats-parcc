@@ -1,15 +1,16 @@
-#define ATS_DYNLOADFLAG 0
 #include "share/atspre_staload.hats"
+#define ATS_DYNLOADFLAG 0
 
 staload "libc/SATS/math.sats"
 staload _ = "libc/DATS/math.dats"
+
 staload UN = "prelude/SATS/unsafe.sats"
 
-staload "util/util.sats"
-staload "util/list.sats"
-staload "util/string.sats"
+staload "./util.sats"
+staload "./list.sats"
+staload "./string.sats"
 
-staload _ = "util/list.dats"
+staload _ = "./list.dats"
 
 #define :: Cons
 
@@ -172,7 +173,7 @@ int string_find (char *str, char *sep) {
 
 %}
 
-
+////
 
 
 implement main0 () = () where {

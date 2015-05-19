@@ -9,7 +9,7 @@ staload "util/pair.sats"
 staload "util/unit.sats"
 
 staload "parcc.sats"
-staload "lexing/lexcc.sats"
+staload "lexcc.sats"
 
 staload _ = "parcc.dats"
 staload _ = "util/list.dats"
@@ -87,7 +87,8 @@ in
 end
 
 
-implement {o} skipws (l) = red (seq (l, skip (rpt0 (spacetab ()))), lam x => fst x)
+implement {o} skipws (l) = 
+	red (seq (l, skip (rpt0 (spacetab ()))), lam x => fst x)
 
 implement alphadigit () = 
 	alt (alpha (), digit ())
@@ -104,6 +105,14 @@ implement xdigits () =
 implement alphadigits () = 		
 	red (rpt1 (alphadigit ()), lam x => string_unexplode x)
 
+
+implement char_single_quote () = 
+	red (
+		seq (literal '\'', 
+			seq (alt (escape (), printable ()), 
+				literal '\'')),
+		lam x => fst (snd x)
+		)
 
 implement string_double_quote () = let
 	val content = red (rpt0 (alt (charnotin "\n\\\"", escape())), lam x => string_unexplode x)
@@ -212,74 +221,78 @@ implement boolean () =
 		alt (literal "true", literal "false"), 
 		lam x => if x = "true" then true else false)
 
-////
+implement symbol () = charin "!#$%&*+-./<=>?@\\^|~"
+implement symbols () = red (rpt1 (symbol ()), lam x => string_unexplode x)
+
+
 staload _ = "util/stream.dats"
+staload "util/convert.sats"
 
 implement main0 () = () where {
 	val sep = "\n==========================\n"
-	val _ = show (apply (literal 'c', $sm.stream_from_string "cdefg"))
+	val _ = show (apply (literal 'c', string_to_stream "cdefg"))
 	val _ = show sep 
-	val _ = show (apply (literal "hello", $sm.stream_from_string "hello"))
+	val _ = show (apply (literal "hello", string_to_stream "hello"))
 	val _ = show sep 
-	val _ = show (apply (anychar (), $sm.stream_from_string "abcde"))
+	val _ = show (apply (anychar (), string_to_stream "abcde"))
 	val _ = show sep 
-	val _ = show (apply (charin "cde", $sm.stream_from_string "eab"))
+	val _ = show (apply (charin "cde", string_to_stream "eab"))
 	val _ = show sep 
-	val _ = show (apply (charnotin "cde", $sm.stream_from_string "eab"))
+	val _ = show (apply (charnotin "cde", string_to_stream "eab"))
 	val _ = show sep 
-	val _ = show (apply (digit (), $sm.stream_from_string "123"))
+	val _ = show (apply (digit (), string_to_stream "123"))
 	val _ = show sep 
-	val _ = show (apply (xdigit (), $sm.stream_from_string "a1"))
+	val _ = show (apply (xdigit (), string_to_stream "a1"))
 	val _ = show sep 
-	val _ = show (apply (alpha (), $sm.stream_from_string "a1"))
+	val _ = show (apply (alpha (), string_to_stream "a1"))
 	val _ = show sep 
-	val _ = show (apply (spacetab (), $sm.stream_from_string "\t"))
+	val _ = show (apply (spacetab (), string_to_stream "\t"))
 	val _ = show sep 
-	val _ = show (apply (escape (), $sm.stream_from_string "\\t"))
+	val _ = show (apply (escape (), string_to_stream "\\t"))
 	val _ = show sep 
-	val _ = show (apply (string_double_quote (), $sm.stream_from_string "\"abcde\""))
+	val _ = show (apply (string_double_quote (), string_to_stream "\"abcde\""))
 	val _ = show sep 
-	val _ = show (apply (string_double_quote (), $sm.stream_from_string "\"\\tbcde\""))
+	val _ = show (apply (string_double_quote (), string_to_stream "\"\\tbcde\""))
 	val _ = show sep 
-	val _ = show (apply (string_double_quote (), $sm.stream_from_string "\"\tbcde\""))
+	val _ = show (apply (string_double_quote (), string_to_stream "\"\tbcde\""))
 	val _ = show sep 
-	val _ = show (apply (string_double_quote (), $sm.stream_from_string "\"a\"bcde\""))
+	val _ = show (apply (string_double_quote (), string_to_stream "\"a\"bcde\""))
 	val _ = show sep 
-	val _ = show (apply (string_double_quote (), $sm.stream_from_string "\"abc\\\"de\""))
+	val _ = show (apply (string_double_quote (), string_to_stream "\"abc\\\"de\""))
 	val _ = show sep 
-	val _ = show (apply (string_double_quote (), $sm.stream_from_string "\"abc\nde\""))
+	val _ = show (apply (string_double_quote (), string_to_stream "\"abc\nde\""))
 	val _ = show sep 
-	val _ = show (apply (string_double_quote (), $sm.stream_from_string "\"abc'de\""))
+	val _ = show (apply (string_double_quote (), string_to_stream "\"abc'de\""))
 	val _ = show sep 
-	val _ = show (apply (string_backtip (), $sm.stream_from_string "`abcde`"))
+	val _ = show (apply (string_backtip (), string_to_stream "`abcde`"))
 	val _ = show sep 
-	val _ = show (apply (string_backtip (), $sm.stream_from_string "`\"abcde`"))
+	val _ = show (apply (string_backtip (), string_to_stream "`\"abcde`"))
 	val _ = show sep 
-	val _ = show (apply (string_backtip (), $sm.stream_from_string "`\\abcde`"))
+	val _ = show (apply (string_backtip (), string_to_stream "`\\abcde`"))
 	val _ = show sep 
-	val _ = show (apply (string_backtip (), $sm.stream_from_string "``abcde`"))
+	val _ = show (apply (string_backtip (), string_to_stream "``abcde`"))
 	val _ = show sep 
-	val _ = show (apply (string_backtip (), $sm.stream_from_string "`ab`cde`"))
+	val _ = show (apply (string_backtip (), string_to_stream "`ab`cde`"))
 	val _ = show sep 
-	val _ = show (apply (string_backtip (), $sm.stream_from_string "`\\`abcde`"))
+	val _ = show (apply (string_backtip (), string_to_stream "`\\`abcde`"))
 	val _ = show sep 
-	val _ = show (apply (string_multiline (), $sm.stream_from_string "```abc\nde`fs``sa````dasd```asd```"))
+	val _ = show (apply (string_multiline (), string_to_stream "```abc\nde`fs``sa````dasd```asd```"))
 	val _ = show sep 
-	val _ = show (apply (signed_int_dec (), $sm.stream_from_string "-109"))
+	val _ = show (apply (signed_int_dec (), string_to_stream "-109"))
 	val _ = show sep 
-	val _ = show (apply (unsigned_int_hex (), $sm.stream_from_string "0fF"))
+	val _ = show (apply (unsigned_int_hex (), string_to_stream "0fF"))
 	val _ = show sep 
-	val _ = show (apply (unsigned_int_bin (), $sm.stream_from_string "101"))
+	val _ = show (apply (unsigned_int_bin (), string_to_stream "101"))
 	val _ = show sep 
-	val _ = show (apply (unsigned_int_oct (), $sm.stream_from_string "0777"))
+	val _ = show (apply (unsigned_int_oct (), string_to_stream "0777"))
 	val _ = show sep 
-	val _ = show (apply (exponent (), $sm.stream_from_string "e+10"))
+	val _ = show (apply (exponent (), string_to_stream "e+10"))
 	val _ = show sep 
-	val _ = show (apply (unsigned_double_dec (), $sm.stream_from_string "10.900"))
+	val _ = show (apply (unsigned_double_dec (), string_to_stream "10.900"))
 	val _ = show sep 
-	val _ = show (apply (signed_double_dec (), $sm.stream_from_string "-10.900"))
+	val _ = show (apply (signed_double_dec (), string_to_stream "-10.900"))
 	val _ = show sep 
-	val _ = show (apply (boolean (), $sm.stream_from_string "true"))
+	val _ = show (apply (boolean (), string_to_stream "true"))
 	val _ = show sep 
 }
 

@@ -25,8 +25,9 @@ symintr foreach
 symintr fst
 symintr snd
 
-symintr len
+//symintr bind
 
+symintr len
 
 symintr show
 
