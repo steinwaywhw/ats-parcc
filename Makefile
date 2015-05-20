@@ -4,7 +4,8 @@
 #SRC := location.sats parcc.sats file.sats string.sats token.sats list.sats stream.sats pair.sats 
 
 # SRC := util/*.dats sexp/*.dats file/*.dats parcc.dats lexcc.dats #dynload.dats 
-SRC := util/*.dats parcc.dats  
+
+SRC := util/*.dats parcc.dats  untyped/*.dats
 
 DEL := *_dats.c *_sats.c *.out main
 

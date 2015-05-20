@@ -39,7 +39,7 @@ implement show_result_unit (r)   = show_result (r, lam x => show "unit")
 implement {i} {o} alt (a, b) = 
     lam input => 
         case+ apply (a, input) of 
-        | Success (ret, input) => Success (ret, input)
+        | Success (ret, rest) => Success (ret, rest)
         | Failure _ => apply (b, input)
 
 implement {i} {o} alts (ps) = 
@@ -61,6 +61,12 @@ implement {i} {o} seqs (ps) =
             bind (a, lam x => 
                 bind (b, lam y => 
                     succeed (x :: y))))
+
+implement {i} {o,o1} seqr (p, r) = 
+    red (seq (skip p, r), lam x => snd x)
+
+implement {i} {o,o1} seql (l, p) = 
+    red (seq (l, skip p), lam x => fst x)
 
 implement {i} {o} sat (p, f) = 
     lam input => 
@@ -95,16 +101,16 @@ implement {i} {o} rptn (p, n) =
                 bind (rptn (p, n-1), 
                     lam y => succeed (x :: y)))
 
-implement {i} {o1,o2} rptuntil (p, e) = let 
-    val trye = 
-        lam input =<cloref1> 
-            case+ apply (e, input) of 
-            | Success (_, _) => Success (Nil (), input)
-            | Failure (_) => Failure (input)
-in 
-    alt (trye, succeed (Nil ()))
+//implement {i} {o1,o2} rptuntil (p, e) = let 
+//    val trye = 
+//        lam input =<cloref1> 
+//            case+ apply (e, input) of 
+//            | Success (_, _) => Success (Nil (), input)
+//            | Failure (_) => Failure (input)
+//in 
+//    alt (trye, succeed (Nil ()))
 //    trye
-end
+//end
 
 
 implement {i} {o} skip (p) = 
@@ -112,7 +118,7 @@ implement {i} {o} skip (p) =
 
 implement {i} {o1,o2} sepby1 (p, sep) = 
     red (
-        seq (p, rpt0 (red (seq (sep, p), lam x => snd x))),
+        seq (p, rpt0 (seqr (sep, p))),
         lam x => fst x :: snd x)
 
 implement {i} {o1,o2} sepby0 (p, sep) = 
@@ -136,8 +142,8 @@ implement {i, o} {r} red (p, f) = bind (p, lam x => succeed (f x))
 implement {i} {o1,o2} bind (p, f) = 
     lam input => 
         case+ apply (p, input) of 
-            | Success (ret, input) => apply (f (ret), input)
-            | Failure (input)      => Failure (input)
+            | Success (ret, rest) => apply (f (ret), rest)
+            | Failure _      => Failure (input)
 
 
 
@@ -225,14 +231,27 @@ implement uppercases () = red (rpt1 (uppercase ()), lam x => string_unexplode x)
 implement lowercases () = red (rpt1 (lowercase ()), lam x => string_unexplode x)
 implement symbols () = red (rpt1 (symbol ()), lam x => string_unexplode x)
 
+implement eof () = 
+    lam input => 
+        case+ !input of 
+        | $sm.Nil _ => Success (Unit (), input)
+        | _ => Failure (input)
+
+implement id () = let 
+    val case1 = red (alt (alpha(), litchar '_'), lam x => string_from_char x)
+    val case2 = red (rpt1 (alt (alphadigit(), litchar '_')), lam x => string_unexplode x)
+in 
+    alt (case1, red (seq (case1, case2), lam x => string_concat (fst x, snd x)))
+end 
 
 
-
-
+////
 staload "util/convert.sats"
 
 implement parser_test () = () where {
     val sep = "\n==========================\n"
+    val _ = show (apply (id (), string_to_stream "x "))
+    val _ = show sep 
     val _ = show (apply (spaces (), string_to_stream "   c"))
     val _ = show sep 
     val _ = show (apply (spaces (), string_to_stream "a   c"))

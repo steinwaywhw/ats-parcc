@@ -1,29 +1,16 @@
-staload sm = "../util/stream.sats"
+staload "parcc.sats"
 
-datatype term = 
-	| TmLam of (string, term)
+datatype syntax = 
+	| TmLam of (string, syntax)
 	| TmVar of (string)
-	| TmApp of (term, term)
-
-datatype token =
-	| Name of string
-	| Lam of () 
-	| Dot of () 
-	| LParen of () 
-	| RParen of ()
-
-fun lexer_lam    (): lexer token
-fun lexer_name   (): lexer token
-fun lexer_dot    (): lexer token
-fun lexer_lparen (): lexer token
-fun lexer_rparen (): lexer token
-
-fun lexer_all (): lexer (lazy ($sm.stream token))
-
-fun parser_app   (): parser (lazy ($sm.stream token), term)
-fun parser_var 	 (): parser (lazy ($sm.stream token), term)
-fun parser_lam   (): parser (lazy ($sm.stream token), term)
-
-fun parser_all (): parser (lazy ($sm.stream token), term)
+	| TmApp of (syntax, syntax)
 
 
+
+fun parser_lam (): lazy (parser syntax)
+and parser_var (): lazy (parser syntax)
+and parser_app (): lazy (parser syntax)
+and parser (): lazy (parser syntax)
+
+
+fun show_syntax (syntax): void
