@@ -101,16 +101,15 @@ implement {i} {o} rptn (p, n) =
                 bind (rptn (p, n-1), 
                     lam y => succeed (x :: y)))
 
-//implement {i} {o1,o2} rptuntil (p, e) = let 
-//    val trye = 
-//        lam input =<cloref1> 
-//            case+ apply (e, input) of 
-//            | Success (_, _) => Success (Nil (), input)
-//            | Failure (_) => Failure (input)
-//in 
-//    alt (trye, succeed (Nil ()))
-//    trye
-//end
+implement {i} {o1,o2} rptuntil (p, e) = let 
+    val trye = 
+        (lam input => 
+            case+ apply (e, input) of 
+            | Success (_, _) => Success (Nil (), input)
+            | Failure (_) => Failure (input)): parser (list o1)
+in 
+    alt (trye, succeed (Nil ()))
+end
 
 
 implement {i} {o} skip (p) = 
