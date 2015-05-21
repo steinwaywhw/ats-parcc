@@ -7,10 +7,10 @@ datatype syntax =
 
 
 
-fun parser_lam (): lazy (parser syntax)
-and parser_var (): lazy (parser syntax)
-and parser_app (): lazy (parser syntax)
-and parser (): lazy (parser syntax)
+//fun parser_lam (): lazy (parser syntax)
+//and parser_var (): parser syntax
+//and parser_app (): lazy (parser syntax)
+fun parser (): lazy (parser syntax)
 
 
 fun show_syntax (syntax): void
