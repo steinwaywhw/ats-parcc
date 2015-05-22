@@ -19,7 +19,7 @@ staload "parcc.sats"
  *  type
  *)
 
-assume parser (i:t@ype, o:t@ype) = i -<cloref1> result (i, o)
+assume parser (i:t@ype, o:t@ype, epsilon:bool) = i -<cloref1> result (i, o)
 
 #define :: Cons
 
@@ -47,44 +47,42 @@ implement show_result_unit (r)   = show_result (r, lam x => show "unit")
  *  combinators
  *)
 
-implement {i} {o} succeed (ret) = $delay (lam input =<cloref1> Success (ret, input))
-implement {i} {o} fail ()       = $delay (lam input =<cloref1> Failure (input))
+implement {i} {o} succeed (ret) = lam input => Success (ret, input)
+implement {i} {o} fail ()       = lam input => Failure (input)
 
-implement {i} {o} alt (a, b) = $delay (
-    lam input =<cloref1> 
+implement {i} {o} alt {e1,e2} (a, b) = 
+    lam input => 
         case+ apply (a, input) of 
         | Success (ret, rest) => Success (ret, rest)
         | Failure _ => apply (b, input)
-)
 
-implement {i} {o} alts (ps) = $delay (force (list_foldr (ps, fail (), lam (a, b) => a \alt b)))
 
-implement {i} {o1,o2} seq (a, b) = $delay (force (a \bind (lam x => b \bind (lam y => succeed (Pair (x, y))))))
-implement {i} {o}     seqs (ps)  = $delay (force (list_foldr (ps, succeed (Nil ()), lam (a, b) => a \bind (lam x => b \bind (lam y => succeed (x :: y))))))
-implement {i} {o,o1} seqr (p, r) = $delay (force (red (seq (skip p, r), lam x => snd x)))
-implement {i} {o,o1} seql (l, p) = $delay (force (red (seq (l, skip p), lam x => fst x)))
+//implement {i} {o} alts (ps) = list_foldr (ps, fail (), lam (a, b) => a \alt b)
+//implement {i} {o}     seqs (ps)  = force (list_foldr (ps, succeed (Nil ()), lam (a, b) => a \bind (lam x => b \bind (lam y => succeed (x :: y)))))
 
-implement {i} {o} sat (p, f) = $delay (
-    lam input =<cloref1> 
+implement {i} {o1,o2} seq  {e1,e2} (a, b) = a \bind (lam x => b \bind (lam y => succeed (Pair (x, y))))
+implement {i} {o,o1}  seqr {e1,e2} (p, r) = red (seq (skip p, r), lam x => snd x)
+implement {i} {o,o1}  seql {e1,e2} (l, p) = red (seq (l, skip p), lam x => fst x)
+
+implement {i} {o} sat {e} (p, f) = 
+    lam input => 
         case+ apply (p, input) of 
         | Failure _ => Failure input 
         | Success (ret, rest) =>
             if f ret
             then Success (ret, rest) 
             else Failure (input)
-)
 
-implement {i} {o} opt (p) = $delay (
+
+implement {i} {o} opt {e} (p) = 
     lam input =<cloref1> 
         case+ apply (p, input) of 
         | Success (ret, rest) => Success (Just ret, rest)
         | Failure (input) => Success (Nothing (), input)
-)
 
-
-implement {i} {o} rpt1 (p) = $delay (force (p \bind (lam x => alt ((rpt1 p) \red (lam y => x :: y), succeed (x :: Nil ())))))
-implement {i} {o} rpt0 (p) = $delay (force ((rpt1 p) \alt (succeed (Nil ()))))
-implement {i} {o} rptn (p, n) = $delay (force (if n <= 0 then succeed (Nil ()) else p \bind (lam x => (rptn (p, n-1)) \bind (lam y => succeed (x :: y)))))
+implement {i} {o} rpt1 (p)    = p \bind (lam x => ((rpt1 p) \red (lam y => x :: y)) \alt succeed (x :: Nil ()))
+implement {i} {o} rpt0 (p)    = (rpt1 p) \alt (succeed (Nil ()))
+implement {i} {o} rptn (p, n) = if n = 0 then succeed (Nil ()) else p \bind (lam x => (rptn (p, n-1)) \bind (lam y => succeed (x :: y))) where {val _ = assert (n>=0)}
 
 //implement {i} {o1,o2} rptuntil (p, e) = let 
 //    val trye = 
@@ -96,35 +94,30 @@ implement {i} {o} rptn (p, n) = $delay (force (if n <= 0 then succeed (Nil ()) e
 //    alt (trye, succeed (Nil ()))
 //end
 
-implement {i} {o} skip (p) = $delay (force (p \bind (lam x => succeed (Unit ()))))
-implement {i} {o1,o2} sepby1 (p, sep) = $delay (force ((p \seq (rpt0 (sep \seqr p))) \red (lam x => fst x :: snd x)))
-implement {i} {o1,o2} sepby0 (p, sep) = $delay (force ((p \sepby1 sep) \alt (succeed (Nil ()))))
-implement {i} {o,o1,o2} between (p, open, close) = $delay (force (open \bind (lam _ => p \bind (lam x => close \bind (lam _ => succeed x)))))
+implement {i} {o} skip {e} (p)                             = p \bind (lam x => succeed (Unit ()))
+implement {i} {o1,o2} sepby1 {e1,e2} (p, sep)              = (p \seq (rpt0 (sep \seqr p))) \red (lam x => fst x :: snd x)
+implement {i} {o1,o2} sepby0 {e1,e2} (p, sep)              = (p \sepby1 sep) \alt (succeed (Nil ()))
+implement {i} {o,o1,o2} between {e,e1,e2} (p, open, close) = open \bind (lam _ => p \bind (lam x => close \bind (lam _ => succeed x)))
 
-
-
-    
-
-implement {i} {o} not (p) = $delay (
-    lam input =<cloref1>
+implement {i} {o} not {e} (p) = 
+    lam input =>
         case+ apply (p, input) of 
         | Success (_, _) => Failure input 
         | Failure _ => Success (Unit (), input)
-)
 
-implement {i} {o} force (p) = lam input => apply (p, input)
-implement {i} {o} mk (p) = p
 
-implement {i} {o} apply (p, s) = !p (s)
+//implement {i} {o} mk (p) = p
 
-implement {i, o} {r} red (p, f) = $delay (force (p \bind (lam x => succeed (f x))))
+implement {i} {o} force {e} (p)     = lam input => apply (!p, input)
+implement {i} {o} apply {e} (p, s)  = p (s)
+implement {i, o} {r} red {e} (p, f) = p \bind (lam x => succeed (f x))
 
-implement {i} {o1,o2} bind (p, f) = $delay (
-    lam input =<cloref1> 
+implement {i} {o1,o2} bind (p, f) = 
+    lam input => 
         case+ apply (p, input) of 
             | Success (ret, rest) => apply (f ret, rest)
             | Failure _      => Failure (input)
-)
+
 
 
 (*
@@ -133,12 +126,12 @@ implement {i} {o1,o2} bind (p, f) = $delay (
 
 
 
-implement anychar () = $delay (
-    lam (input: lazy ($sm.stream char)) =<cloref1>
+implement anychar () = 
+    lam input =>
         case+ !input of 
-        | $sm.Nil () => Failure (input):           result (lazy ($sm.stream char), char)
-        | $sm.Cons (x, rest) => Success (x, rest): result (lazy ($sm.stream char), char)
-)
+        | $sm.Nil () => Failure (input)
+        | $sm.Cons (x, rest) => Success (x, rest)
+
 
 
 implement spaces ()     = skip (rpt0 (litchar ' '))
@@ -189,19 +182,17 @@ implement escape ()     = let
             lam x => int2char0 (snd x))
 
 in 
-    alts (case1 :: case2 :: case3 :: Nil ()) 
+    (case1 \alt case2) \alt case3
 end
 
-implement litstring (match) = $delay (
-let 
-    fun genpar (index: int):<cloref1> lazy (parser unit) =
+implement litstring (match) = let
+    fun genpar (index: int):<cloref1> parser unit =
         if index = len (match) - 1
         then skip (litchar match[index])
         else skip (seq (skip (litchar match[index]), genpar (index+1)))
 in 
-    force (genpar (0) \red (lam _ => match))
+    genpar (0) \red (lam _ => match)
 end
-)
 
 implement alphas ()     = (rpt1 (alpha ()))       \red (lam x => string_unexplode x)
 implement digits ()     = (rpt1 (digit ()))       \red (lam x => string_unexplode x)
@@ -212,21 +203,20 @@ implement uppercases () = (rpt1 (uppercase ()))   \red (lam x => string_unexplod
 implement lowercases () = (rpt1 (lowercase ()))   \red (lam x => string_unexplode x)
 implement symbols ()    = (rpt1 (symbol ()))      \red (lam x => string_unexplode x)
 
-implement eof () = $delay (
-    lam (input: lazy ($sm.stream char)) =<cloref1> 
+implement eof () = 
+    lam input =>
         case+ !input of 
         | $sm.Nil _ => Success (Unit (), input)
         | _ => Failure (input)
-)
 
 
-implement id () = $delay (
-let 
-    val case1 = (alpha() \alt (litchar '_')) \red (lam x => string_from_char x): lazy (parser string)
-    val case2 = (rpt1 (alphadigit() \alt (litchar '_'))) \red (lam x => string_unexplode x): lazy (parser string)
+
+implement id () = let
+    val case1 = (alpha() \alt (litchar '_')) \red (lam x => string_from_char x)
+    val case2 = (rpt1 (alphadigit() \alt (litchar '_'))) \red (lam x => string_unexplode x)
 in 
-    force (((case1 \seq case2) \red (lam x => string_concat (fst x, snd x))) \alt case1)
-end)
+    ((case1 \seq case2) \red (lam x => string_concat (fst x, snd x))) \alt case1
+end
 
 
 ////
