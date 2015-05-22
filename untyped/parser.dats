@@ -23,11 +23,13 @@ infixl +>
 infixl <+
 infixl <+>
 infixl <|>
+infixl </>
 
 overload +> with seqr 
 overload <+ with seql
 overload <+> with seq 
 overload <|> with alt 
+overload </> with red
 
 implement show_syntax (s) = 
 	case+ s of 
@@ -76,15 +78,34 @@ implement show_syntax (s) =
 
 
 
-implement parser () = let 
-	val pvar = id () \red (lam x => TmVar x)
-	val plam = $delay (litstring "lam" +> ws () +> (between (id(), litstring "(", litstring ")")) <+ ws () <+ litstring "=>" <+ ws () <+> force (parser ()))
-	val xplam = $delay (red (force plam, lam x => TmLam (fst x, snd x)))
-	val papp = $delay (force (parser ()) <+ ws () <+> between (force (parser ()), litstring "(", litstring ")"))
-	val xpapp = $delay (red (force papp, lam x => TmApp (fst x, snd x)))
-in $delay (
-	pvar <|> force xplam <|> force xpapp
-) end 
+implement parser () = $delay let 
+	val b = lam p => between (p, litstring "(" <+> ws(), ws () <+> litstring ")")
+
+	val pvar = $delay (force ((id () \sat (lam x => x != "lam")) </> (lam x => TmVar x))) where {val _ = show "var\n"}
+//	val _ = $delay (show "hahahahahahahah")
+	val papp = $delay (
+		force (
+			($delay force (parser ())) <+ ws () 
+			<+> (between ($delay (force (parser ())), litstring "(" <+> ws(), ws () <+> litstring ")"))
+			</> (lam x => TmApp (fst x, snd x))
+			)
+		) where {val _ = show "app\n"}
+	
+	val plam = $delay (
+		force (
+			(litstring "lam" +> ws () +> b (id()) <+ ws () <+ litstring "=>" <+ ws () 
+			 			<+> $delay (force (parser ()))) 
+			</> (lam x => TmLam (fst x, snd x))
+			)
+		) where {val _ = show "lam\n"}
+
+
+//	val _ = $showtype pvar 
+//	val _ = $showtype plam 
+//	val _ = $showtype papp
+in 
+	force (pvar <|> papp <|> plam) where {val _ = show "here\n"}
+end
 
 
 
@@ -121,6 +142,6 @@ implement main0 () = () where {
 //	val p = parser ()
 //	val test = litstring "lam" <+ ws () <+ litstring "(" <+ ws () <+> id () <+ ws () <+ litstring ")" 
 //	val _ = show_result_string (apply (red (test, lam x => string_concat (fst x, snd x)), s))
-//	val _ = show_result (apply (parser_lam(), s), lam x => show_syntax x)
-	val _ = show_result (apply (sepby1 (force (parser ()), ws ()), s), lam x => list_foreach (x, lam x => show_syntax x))
+	val _ = show_result (apply (parser(), s), lam x => show_syntax x)
+//	val _ = show_result (apply (sepby1 (parser (), ws ()), s), lam x => list_foreach (x, lam x => show_syntax x))
 }
