@@ -19,7 +19,12 @@ staload "parcc.sats"
  *  type
  *)
 
-assume parser (i:t@ype, o:t@ype, epsilon:bool) = i -<cloref1> result (i, o)
+//assume parser (i:t@ype, o:t@ype, epsilon:bool) = i -<cloref1> result (i, o)
+
+
+
+
+
 
 #define :: Cons
 
@@ -43,18 +48,20 @@ implement show_result_double (r) = show_result (r, lam x => show x)
 implement show_result_bool (r)   = show_result (r, lam x => show x)
 implement show_result_unit (r)   = show_result (r, lam x => show "unit")
 
+
+
 (*
  *  combinators
  *)
 
-implement {i} {o} succeed (ret) = lam input => Success (ret, input)
-implement {i} {o} fail ()       = lam input => Failure (input)
+implement {i} {o} succeed (ret) = mk (lam input => Success (ret, input))
+implement {i} {o} fail ()       = mk (lam input => Failure (input))
 
 implement {i} {o} alt {e1,e2} (a, b) = 
-    lam input => 
-        case+ apply (a, input) of 
-        | Success (ret, rest) => Success (ret, rest)
-        | Failure _ => apply (b, input)
+    mk (lam input => 
+            case+ apply (a, input) of 
+            | Success (ret, rest) => Success (ret, rest)
+            | Failure _ => apply (b, input))
 
 
 //implement {i} {o} alts (ps) = list_foldr (ps, fail (), lam (a, b) => a \alt b)
@@ -64,60 +71,64 @@ implement {i} {o1,o2} seq  {e1,e2} (a, b) = a \bind (lam x => b \bind (lam y => 
 implement {i} {o,o1}  seqr {e1,e2} (p, r) = red (seq (skip p, r), lam x => snd x)
 implement {i} {o,o1}  seql {e1,e2} (l, p) = red (seq (l, skip p), lam x => fst x)
 
-implement {i} {o} sat {e} (p, f) = 
-    lam input => 
-        case+ apply (p, input) of 
-        | Failure _ => Failure input 
-        | Success (ret, rest) =>
-            if f ret
-            then Success (ret, rest) 
-            else Failure (input)
+implement {i} {o} sat {e} (p, f) = mk p where {
+    val p = lam input =<cloref1> 
+            (case+ apply (p, input) of 
+            | Failure _ => Failure input 
+            | Success (ret, rest) =>
+                if f ret
+                then Success (ret, rest) 
+                else Failure (input)): result (i, o)
+}
 
 
-implement {i} {o} opt {e} (p) = 
-    lam input =<cloref1> 
-        case+ apply (p, input) of 
-        | Success (ret, rest) => Success (Just ret, rest)
-        | Failure (input) => Success (Nothing (), input)
+implement {i} {o} opt {e} (p) = mk p where {
+    val p = lam input =<cloref1> 
+            (case+ apply (p, input) of 
+            | Success (ret, rest) => Success (Just ret, rest)
+            | Failure (input) => Success (Nothing (), input)): result (i, maybe o)
+}
 
-implement {i} {o} rpt1 (p)    = p \bind (lam x => ((rpt1 p) \red (lam y => x :: y)) \alt succeed (x :: Nil ()))
-implement {i} {o} rpt0 (p)    = (rpt1 p) \alt (succeed (Nil ()))
-implement {i} {o} rptn (p, n) = if n = 0 then succeed (Nil ()) else p \bind (lam x => (rptn (p, n-1)) \bind (lam y => succeed (x :: y))) where {val _ = assert (n>=0)}
+implement {i} {o} rpt1 (p)        = p \bind (lam x => ((rpt1 p) \red (lam y => x :: y)) \alt succeed (x :: Nil ()))
+implement {i} {o} rpt0 (p)        = (rpt1 p) \alt (succeed (Nil ()))
+implement {i} {o} rptn {n} (p, n) = if n = 0 then succeed (Nil ()) else p \bind (lam x => (rptn (p, n-1)) \bind (lam y => succeed (x :: y)))
 
-//implement {i} {o1,o2} rptuntil (p, e) = let 
+//implement {i} {o1,o2} rptuntil {e} (p, e) = let 
 //    val trye = 
-//        (lam input => 
-//            case+ apply (e, input) of 
+//        lam input =<cloref1> 
+//            (case+ apply (e, input) of 
 //            | Success (_, _) => Success (Nil (), input)
-//            | Failure (_) => Failure (input)): parser (list o1)
+//            | Failure (_) => Failure (input)): result (i, list o1)
 //in 
-//    alt (trye, succeed (Nil ()))
+//    alt (mk trye, (p \seq rptuntil (p, e)) \red (lam x => fst x :: snd x))
 //end
 
-implement {i} {o} skip {e} (p)                             = p \bind (lam x => succeed (Unit ()))
-implement {i} {o1,o2} sepby1 {e1,e2} (p, sep)              = (p \seq (rpt0 (sep \seqr p))) \red (lam x => fst x :: snd x)
-implement {i} {o1,o2} sepby0 {e1,e2} (p, sep)              = (p \sepby1 sep) \alt (succeed (Nil ()))
-implement {i} {o,o1,o2} between {e,e1,e2} (p, open, close) = open \bind (lam _ => p \bind (lam x => close \bind (lam _ => succeed x)))
 
-implement {i} {o} not {e} (p) = 
-    lam input =>
-        case+ apply (p, input) of 
-        | Success (_, _) => Failure input 
-        | Failure _ => Success (Unit (), input)
+implement {i} {o} skip {e} (p)                             = p \bind (lam x => succeed (Unit ()))
+implement {i} {o1,o2} sepby1 (*{e1,e2}*) {e} (p, sep)              = (p \seq (rpt0 (sep \seqr p))) \red (lam x => fst x :: snd x)
+implement {i} {o1,o2} sepby0 (*{e1,e2}*) {e} (p, sep)              = (p \sepby1 sep) \alt (succeed (Nil ()))
+implement {i} {o,o1,o2} between {e1,e2} (p, open, close) = open \bind (lam _ => p \bind (lam x => close \bind (lam _ => succeed x)))
+
+implement {i} {o} not {e} (p) = mk p where {
+    val p = lam input =<cloref1>
+            (case+ apply (p, input) of 
+            | Success (_, _) => Failure input 
+            | Failure _ => Success (Unit (), input)): result (i, unit)
+}
 
 
 //implement {i} {o} mk (p) = p
 
-implement {i} {o} force {e} (p)     = lam input => apply (!p, input)
-implement {i} {o} apply {e} (p, s)  = p (s)
-implement {i, o} {r} red {e} (p, f) = p \bind (lam x => succeed (f x))
+implement {i} {o} force {e} (p)     = mk (lam input => apply (!p, input))
+implement {i} {o} apply {e} (p, s)  = (unmk p) s
+implement {i,o} {r} red {e} (p, f)  = p \bind (lam x => succeed (f x))
 
-implement {i} {o1,o2} bind (p, f) = 
-    lam input => 
-        case+ apply (p, input) of 
-            | Success (ret, rest) => apply (f ret, rest)
-            | Failure _      => Failure (input)
-
+implement {i} {o1,o2} bind (p, f) = mk p where {
+    val p = lam input =<cloref1> 
+            (case+ apply (p, input) of 
+                | Success (ret, rest) => apply (f ret, rest)
+                | Failure _ => Failure (input)): result (i, o2)
+}
 
 
 (*
@@ -126,11 +137,12 @@ implement {i} {o1,o2} bind (p, f) =
 
 
 
-implement anychar () = 
-    lam input =>
-        case+ !input of 
-        | $sm.Nil () => Failure (input)
-        | $sm.Cons (x, rest) => Success (x, rest)
+implement anychar () = mk p where {
+    val p = lam (input: lazy ($sm.stream char)) =<cloref1>
+            (case+ !input of 
+            | $sm.Nil () => Failure (input)
+            | $sm.Cons (x, rest) => Success (x, rest)): result (lazy ($sm.stream char), char)
+}
 
 
 
@@ -154,16 +166,16 @@ implement oneof (s)     = anychar () \sat (lam x => string_find (s, string_from_
 implement noneof (s)    = anychar () \sat (lam x => string_find (s, string_from_char x) < 0)
 implement escape ()     = let
     val case1 = red (
-                    seq (litchar '\\', oneof "abfnrtv\\\'\"\?`"), 
-                    lam x => case+ snd x of
-                        | 'a' => '\a'
-                        | 'b' => '\b'
-                        | 'f' => '\f'
-                        | 'n' => '\n'
-                        | 'r' => '\r'
-                        | 't' => '\t'
-                        | 'v' => '\v'
-                        | ch  =>> ch)
+            seq (litchar '\\', oneof "abfnrtv\\\'\"\?`"), 
+            lam x => case+ snd x of
+                | 'a' => '\a'
+                | 'b' => '\b'
+                | 'f' => '\f'
+                | 'n' => '\n'
+                | 'r' => '\r'
+                | 't' => '\t'
+                | 'v' => '\v'
+                | ch  =>> ch)
     
     val case2 = red (
             seq (
@@ -203,11 +215,12 @@ implement uppercases () = (rpt1 (uppercase ()))   \red (lam x => string_unexplod
 implement lowercases () = (rpt1 (lowercase ()))   \red (lam x => string_unexplode x)
 implement symbols ()    = (rpt1 (symbol ()))      \red (lam x => string_unexplode x)
 
-implement eof () = 
-    lam input =>
+implement eof () = mk p where {
+    val p = lam (input: lazy ($sm.stream char)) =<cloref1>
         case+ !input of 
         | $sm.Nil _ => Success (Unit (), input)
         | _ => Failure (input)
+}
 
 
 

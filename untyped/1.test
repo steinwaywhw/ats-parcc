@@ -1,1 +1,2 @@
-lam (x) => x
+(lam (x) => x) (y)
+lam (y) => x y
