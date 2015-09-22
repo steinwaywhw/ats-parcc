@@ -163,8 +163,7 @@ implement main0 () = () where {
 
 term = var
      | lam (name) => term 
-     | var (term)
-     | (lam (term)) term
+     | term term
      | (term)
 
 *)
