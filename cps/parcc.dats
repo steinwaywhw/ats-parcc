@@ -1,30 +1,225 @@
 #include "share/atspre_staload.hats"
+staload UN = "prelude/SATS/unsafe.sats"
 #define ATS_DYNLOADFLAG 0
-
-staload "util/util.sats"
-staload "util/list.sats"
-staload "util/unit.sats"
-staload "util/maybe.sats"
-staload "util/pair.sats"
-staload "util/string.sats"
-staload sm = "util/stream.sats"
-
-staload _ = "util/list.dats"
-staload _ = "util/stream.dats"
-staload _ = "util/pair.dats"
 
 staload "parcc.sats"
 
-(*
- *  type
- *)
-
-//assume parser (i:t@ype, o:t@ype, epsilon:bool) = i -<cloref1> result (i, o)
-
-
+staload "symintr.sats"
+staload "list.sats"
+staload "maybe.sats"
+staload _ = "list.dats"
+staload _ = "maybe.dats"
 
 
+#define :: ListCons 
+#define nil ListNil
 
+implement (a) gcompare_val_val<parser a> (x, y) = 
+    gcompare_val_val<ref(void)> ($UN.cast{ref(void)} x, $UN.cast{ref(void)} y)
+
+implement {a} parcc_delay (p) = 
+    parser_encode (lam (input, cont) => 
+        parser_apply (p (), input, cont))
+
+implement {a} parser_apply (p, input, cont) = 
+    (parser_decode p)(input, cont)
+
+implement {a} parser_fail () = 
+    parser_encode (lam (input, cont) => 
+        $raise ParsingException ("parser_fail"))
+
+implement {a} parser_succeed (x) = 
+    parser_encode (lam (input, cont) => 
+        cont (x, input))
+
+implement {a} parcc_maybe (p) = 
+    parser_encode (lam (input, cont) => 
+        try parser_apply (p, input, lam (result, rest) => cont (Just result, rest))
+        with ~ParsingException (str) => (println! str; cont (Nothing (), input)))
+
+implement {a,b} parcc_bind (p, f) = 
+    parser_encode (lam (input, cont) => 
+        parser_apply (p, input, lam (result, rest) => parser_apply (f result, rest, cont)))
+
+implement {a,b} parcc_seq (pa, pb) = 
+    pa \parcc_bind (lam a => 
+        pb \parcc_bind (lam b => 
+            parser_succeed ($tup(a, b))))
+
+implement {a,b,c} parcc_seq3 (pa, pb, pc) =
+    pa \parcc_bind (lam a => 
+        pb \parcc_bind (lam b => 
+            pc \parcc_bind (lam c 
+                => parser_succeed ($tup(a, b, c)))))
+
+implement {a} parcc_seqs (pas) =
+    case+ pas of 
+    | nil _     => parser_succeed (nil ())
+    | pa :: pas => 
+        pa \parcc_bind (lam a => 
+            (parcc_seqs pas) \parcc_bind (lam bs => 
+                parser_succeed (a :: bs)))
+
+implement {a} parcc_alt (pa, pb) = 
+    (parcc_maybe pa) \parcc_bind (lam a => 
+        case+ a of 
+        | Just a => parser_succeed a 
+        | Nothing _ => pb)
+
+implement {a} parcc_alt3 (pa, pb, pc) = 
+    (parcc_maybe pa) \parcc_bind (lam a => 
+        case+ a of 
+        | Just a => parser_succeed a
+        | Nothing _ => parcc_alt (pb, pc))
+
+implement {a} parcc_alts (pas) = 
+    case+ pas of 
+    | nil _     => parser_fail ()
+    | pa :: pas => 
+        (parcc_maybe pa) \parcc_bind (lam a => 
+            case+ a of 
+            | Just a    => parser_succeed a
+            | Nothing _ => parcc_alts pas)
+
+implement {a} parcc_sat (p, f) = 
+    p \parcc_bind (lam a => 
+        if f a then parser_succeed a else parser_fail ())
+
+implement {a} parcc_skip (p) = 
+    p \parcc_bind (lam a => let val v = () in parser_succeed v end)
+
+implement {a,b} parcc_map (p, f) =
+    p \parcc_bind (lam a => parser_succeed (f a))
+
+implement {a} parcc_rpt0 (p) = 
+    (parcc_maybe p) \parcc_bind (lam a => 
+        case+ a of 
+        | Just a    => (parcc_rpt0 p) \parcc_bind (lam bs => parser_succeed (a :: bs))
+        | Nothing _ => parser_succeed (nil ()))
+
+implement {a} parcc_rpt1 (p) = 
+    (parcc_seq (p, parcc_rpt0 p)) \parcc_bind (lam a => parser_succeed (a.0 :: a.1))
+
+implement {a} parcc_rptn (p, n) = 
+    if n = 0 
+    then parser_succeed (nil ())
+    else (parcc_seq (p, parcc_rptn (p, n-1))) \parcc_bind (lam a => parser_succeed (a.0 :: a.1))
+
+implement {a,b} parcc_sepby (a, sep) = 
+    parcc_seq (a, parcc_rpt0 (parcc_seq (sep, a) \parcc_map (lam x => x.1))) 
+        \parcc_map (lam x => ListCons (x.0, x.1))
+
+implement {a,b} parcc_leadby (lead, pb) = 
+    parcc_seq (lead, pb) \parcc_map (lam x => x.1)
+
+implement {a,b} parcc_followedby (pa, follow) = 
+    parcc_seq (pa, follow) \parcc_map (lam x => x.0)
+
+implement {a,b,c} parcc_between (pa, pb, pc) =
+    (pa \parcc_leadby pb) \parcc_followedby pc
+
+implement {o} memo0 (f) = let 
+    val p = f ()
+in 
+    lam () => p 
+end 
+
+implement {i,o} memo1 (f) = let 
+    staload "libats/ML/SATS/funmap.sats"
+    staload _ = "libats/ML/DATS/funmap.dats"    
+    staload _ = "libats/DATS/funmap_avltree.dats"
+
+    val table = ref<map(i,o)> (funmap_nil ())
+in 
+    lam a => 
+        case+ funmap_search (!table, a) of 
+        | ~Some_vt p => p
+        | ~None_vt _ => let 
+            val p = f a 
+            var t = !table
+            val- ~None_vt _ = funmap_insert (t, a, p)
+            val _ = !table := t
+        in 
+            p
+        end 
+end
+
+implement {i1,i2,o} memo2 (f) = let 
+    staload "libats/ML/SATS/funmap.sats"
+    staload _  = "libats/ML/DATS/funmap.dats"    
+    staload _  = "libats/DATS/funmap_avltree.dats"
+
+    val table = ref<map(@(i1,i2),o)> (funmap_nil ())
+in 
+    lam (a, b) => 
+        case+ funmap_search (!table, @(a, b)) of 
+        | ~Some_vt p => p
+        | ~None_vt _ => let 
+            val p = f (a, b)
+            var t = !table
+            val- ~None_vt _ = funmap_insert (t, @(a, b), p)
+            val _ = !table := t
+        in 
+            p
+        end 
+end
+
+
+
+
+
+
+
+
+////
+implement {a} memo_parser (p) = let 
+    staload "libats/ML/SATS/funmap.sats"
+    staload _  = "libats/ML/DATS/funmap.dats"    
+    staload _  = "libats/DATS/funmap_avltree.dats"
+
+    #define :: Cons
+
+    typedef entry_t = @(a, input_t, list (cont_t a))
+    val table = ref<map(input_t, ref entry_t)> (funmap_nil ())
+in
+    lam (input, cont) =<cloref1> 
+        case+ funmap_search (!table, input) of 
+        | ~Some_vt entry => 
+            let 
+                val _ = !entry.2 := cont :: !entry.2
+            in 
+                cont (result, input)
+            end 
+        | ~None_vt _ => 
+            let 
+                val entry = ref<entry_t> ()
+                var t = !table 
+                val- ~None_vt _ = funmap_insert (t, input, entry)
+                val _ = !table := t
+            in 
+                p (input, lam (result, input) => let 
+                    val :=)
+end
+
+
+//assume input_t ...
+
+implement {} parser_char () = 
+    parser_encode (lam (input, cont) => cont (..., ...))
+
+
+implement {} parser_digit () = 
+    parser_encode (lam (input, cont) => parser_char () \)
+implement {} parser_digits () = 
+    (parser_digit ())
+    \parcc_alt 
+    (parser_digits () \parcc_seq parser_digit ())
+////
+
+assume input_t = lazy ($sm.stream char)
+
+typedef entry_t = [o,a:t@ype] @{ks = list (cont (o, a)), rs = list (result o)}
+//assume trampoline = ref (@{stack = list (pair (parser o, input_t)), table = map (input_t, entry)})
 
 #define :: Cons
 
@@ -54,9 +249,39 @@ implement show_result_unit (r)   = show_result (r, lam x => show "unit")
  *  combinators
  *)
 
-implement {i} {o} succeed (ret) = mk (lam input => Success (ret, input))
-implement {i} {o} fail ()       = mk (lam input => Failure (input))
+implement {o} succeed (ret) = mk (lam (input, k) => k (Success (ret, input)))
+implement {o} fail    ()    = mk (lam (input, k) => k (Failure (input)))
 
+implement {o,a}   apply (p, input, k)  = (unmk p) (input, k)
+implement {o1,o2} bind  (p, f) = mk (lam (input, k) => 
+    apply (p, input, lam result => 
+        case+ result of 
+        | Success (v, rest) => apply ((f v), rest, k)
+        | Failure (rest) => k (Failure (rest)))
+)
+
+implement {o1,o2} seq (a, b) = a \bind (lam x => b \bind (lam y => succeed (Pair (x, y))))
+implement {o}     alt (a, b) = mk (lam (input, k) => let 
+    val _ = apply (a, input, k)
+    val _ = apply (b, input, k)
+in 
+end
+)
+
+
+
+implement memo_cps (f) = let 
+    val ref = ref<map(input_t, entry)>(map_make ())
+    extern fun eq 
+    fun table_ref (input) = 
+        case+ map_lookup (input, ref) of 
+        | Just (entry) => entry 
+        | None () => let val _ = insert (input, entry, ref) in entry end
+in
+    lam (input, k) => 
+
+
+////
 implement {i} {o} alt {e1,e2} (a, b) = 
     mk (lam input => 
             case+ apply (a, input) of 
@@ -120,15 +345,13 @@ implement {i} {o} not {e} (p) = mk p where {
 //implement {i} {o} mk (p) = p
 
 implement {i} {o} force {e} (p)     = mk (lam input => apply (!p, input))
-implement {i} {o} apply {e} (p, s)  = (unmk p) s
 implement {i,o} {r} red {e} (p, f)  = p \bind (lam x => succeed (f x))
 
-implement {i} {o1,o2} bind (p, f) = mk p where {
-    val p = lam input =<cloref1> 
-            (case+ apply (p, input) of 
-                | Success (ret, rest) => apply (f ret, rest)
-                | Failure _ => Failure (input)): result (i, o2)
-}
+
+
+
+
+////
 
 
 (*
