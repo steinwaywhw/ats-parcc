@@ -1,21 +1,22 @@
-#include "share/atspre_staload.hats"
-staload UN = "prelude/SATS/unsafe.sats"
 #define ATS_DYNLOADFLAG 0
+#include "share/atspre_staload.hats"
 
 staload "parcc.sats"
 
-staload "symintr.sats"
+#include "atsutils.hats"
+
 staload "list.sats"
 staload "maybe.sats"
-staload _ = "list.dats"
-staload _ = "maybe.dats"
 
 
 #define :: ListCons 
 #define nil ListNil
 
-implement (a) gcompare_val_val<parser a> (x, y) = 
-    gcompare_val_val<ref(void)> ($UN.cast{ref(void)} x, $UN.cast{ref(void)} y)
+//implement (a) gcompare_val_val<parser a> (x, y) = 
+//    gcompare_val_val<ref(void)> ($UN.cast{ref(void)} x, $UN.cast{ref(void)} y)
+
+implement (a) order_compare<parser a> (x, y) = 
+    gcompare_val_val<ref(void)> ($UNSAFE.cast{ref(void)} x, $UNSAFE.cast{ref(void)} y)
 
 implement {a} parcc_delay (p) = 
     parser_encode (lam (input, cont) => 
