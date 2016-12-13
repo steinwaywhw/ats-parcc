@@ -19,4 +19,3 @@ fun parser_sexp_sexp (): parser sexp
 fun parser_sexp_sexplist (): parser sexp
 fun parser_sexp_file (): parser sexp 
 
-fun unparse_sexp (sexp): unit

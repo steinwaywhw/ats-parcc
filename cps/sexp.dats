@@ -28,15 +28,17 @@ overload || with parcc_alt
 infixl || 
 
 
+(******************************)
 
-implement order_compare<parser sexp> (x, y) = 
-    gcompare_val_val<ref(void)> ($UNSAFE.cast{ref(void)} x, $UNSAFE.cast{ref(void)} y)
+implement show_any<sexp> (sexp) = 
+	case+ sexp of 
+	| SString s => ignoret (show<string> "Str("; show<string> s; show<string> ")")
+	| SBool s   => ignoret (show<string> "Bool("; show<bool> s; show<string> ")")
+	| SInt s    => ignoret (show<string> "Int("; show<int> s; show<string> ")")
+	| SSymbol s => ignoret (show<string> "Sym("; show<string> s; show<string> ")")
+	| SList ss  => ignoret (show<string> "List("; let val _ = list_foldl<sexp,unit> (ss, Unit (), lam (s, ss) => (show s; Unit ())) in () end; show<string> ")")
 
-//extern fun {a:t@ype} debug (string, parser a): parser a
-//implement {a} debug (str, p) = 
-//	parser_encode (lam (input, cont) => 
-//		let val _ = println! str
-//		in parser_apply (p, input, cont) end)
+(******************************)
 
 implement parser_sexp_symbol () = 
 	(((parser_alpha () || parser_lit_char '_') ++ (parser_alphadigit () ^*))
@@ -74,13 +76,4 @@ implement parser_sexp_sexplist () =
 
 implement parser_sexp_file () = 
 	parser_sexp_sexplist () \parcc_followedby parser_eof ()
-
-implement unparse_sexp (sexp) = 
-	case+ sexp of 
-	| SString s => (show<string> "Str("; show<string> s; show<string> ")"; Unit ())
-	| SBool s => (show<string> "Bool("; show<bool> s; show<string> ")"; Unit ())
-	| SInt s => (show<string> "Int("; show<int> s; show<string> ")"; Unit ())
-	| SSymbol s => (show<string> "Sym("; show<string> s; show<string> ")"; Unit ())
-	| SList ss => (show<string> "List("; let val _ = list_foldl<sexp,unit> (ss, Unit (), lam (s, ss) => unparse_sexp s) in () end; show<string> ")"; Unit ())
-
 

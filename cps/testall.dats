@@ -33,6 +33,6 @@ implement main0 () = {
 	val input = file_get_stream ("./test1.sexp")
 	val input = $UNSAFE.cast{input_t} input
 
-	val _ = parser_apply (parser_sexp_file (), input, lam (x, input) => unparse_sexp x)
+	val _ = parser_apply (parser_sexp_file (), input, lam (x, input) => (show x; Unit ()))
 }
 

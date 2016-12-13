@@ -12,11 +12,12 @@ staload "maybe.sats"
 #define :: ListCons 
 #define nil ListNil
 
-//implement (a) gcompare_val_val<parser a> (x, y) = 
-//    gcompare_val_val<ref(void)> ($UN.cast{ref(void)} x, $UN.cast{ref(void)} y)
+(******************************)
 
 implement (a) order_compare<parser a> (x, y) = 
     gcompare_val_val<ref(void)> ($UNSAFE.cast{ref(void)} x, $UNSAFE.cast{ref(void)} y)
+
+(******************************)
 
 implement {a} parcc_delay (p) = 
     parser_encode (lam (input, cont) => 
